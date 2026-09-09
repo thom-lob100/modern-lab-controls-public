@@ -1,0 +1,28 @@
+# Visual Studio
+.vs/
+bin/
+obj/
+*.user
+*.suo
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# Designer cache
+*.designer.cache
+
+# NuGet
+packages/
+*.nupkg
+
+# 로컬 전용 DB 스크립트 (커밋 금지 — 사내 정보 방지 규칙)
+db/
+
+# 로컬 전용 DB 스크립트 (사내 MES 도메인 — 공개 저장소에 포함하지 않음)
+db/
+
+# Claude Code 에이전트 세션이 만드는 임시 워크트리 (커밋 대상 아님)
+.claude/worktrees/
