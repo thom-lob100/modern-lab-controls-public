@@ -1,61 +1,185 @@
-# 임시 전달 — Equipment/Lots 화면 디자이너 (2026-09-13)
+# 임시 전달 — Equipment/Lots 하단 실행 줄 스플리터 (2026-09-13)
 
-**이 저장소는 라이브러리 공개용이 아니라 단발 전달 통로입니다.** 급한 화면 변경을 회사에서 바로
-보고 적용하기 위한 것이고, 정식 배포는 릴리즈 zip입니다.
+**이 저장소는 라이브러리 공개용이 아니라 단발 전달 통로입니다.** 정식 배포는 릴리즈 zip입니다.
 
-이번에는 **`EquipmentLotForm.Designer.cs` 한 파일만** 2026-09-10 전달분에서 현재 버전으로
-갱신했습니다. 나머지 세 파일(`EquipmentLotForm.cs` · `EquipmentLotContracts.cs` ·
-`RequestInfoDialogForm.cs`)은 그대로 두었습니다. **`Modern.Lab.Commons.dll`은 바뀌지 않습니다.**
+이번 갱신분은 `EquipmentLotForm.Designer.cs` 한 파일이고, **폼 코드(`EquipmentLotForm.cs`)에 손으로
+넣어야 하는 부분이 함께 있습니다**(아래 3절). 디자이너만 바꾸면 `splitActions`의 이벤트 핸들러가
+없어 컴파일되지 않습니다. `Modern.Lab.Commons.dll`은 바뀌지 않습니다.
 
-## 이번에 바뀐 것 — 결정 패널
+## 1. 무엇이 바뀌었나 — 스플리터가 아래 실행 줄까지 내려온다
 
-### 1. KPI 카드의 테두리·배경
+의뢰서와 결정 패널을 가르던 세로 스플리터가 **위쪽에서 끝나고**, 아래 실행 줄은 별도 패널이라
+Job 카드 폭을 코드가 흉내내고 있었습니다(`jobCard.Width = splitDurableDecision.Width`).
 
-v0.58.0 에서 카드 넷에 `Flat = true`가 들어가 **테두리와 배경이 통째로 사라져** 있었습니다.
-그 속성은 공용 카드 패널 위에 얹을 때 크롬을 없애라고 만든 것입니다. 네 줄을 지워 되돌리고,
-크롬이 돌아온 만큼 자리를 함께 줬습니다.
+이제 실행 줄도 스플리터 하나(`splitActions`)의 두 칸입니다.
 
 | 무엇 | 전 | 후 |
 |---|---|---|
-| KPI 카드 높이(`kpiEquipment`·`kpiPorts`·`kpiLot`·`kpiDurable`) | 79 | **96** |
-| 둘째 줄 Y(`kpiLot`·`kpiDurable`) | 91 | **108** |
-| KPI 그리드(`decisionGrid`) 높이 | 166 | **176** |
-| 결정 카드(`decisionCard`) 높이 | 300 | **262** |
+| `bottomPanel` 구성 | `actionCard`(Fill) + `gapActions`(Right 8) + `jobCard`(Right) | `splitActions`(Fill) 하나 |
+| `actionCard` | `bottomPanel` 직속 | `splitActions.Panel1` |
+| `jobCard` | `bottomPanel` 직속 · `Dock = Right` | `splitActions.Panel2` · `Dock = Fill` |
+| 두 칸의 경계 | 코드가 폭만 맞춤 | **진짜 스플리터** — 끌 수 있고 위쪽 스플리터와 양방향으로 묶임 |
 
-### 2. 창을 낮추면 지속재 목록이 줄고 결정 패널이 따라 올라온다
+위를 끌면 아래가, 아래를 끌면 위가 따라옵니다. 결정 패널과 Job 카드는 항상 같은 폭입니다.
 
-지속재 목록의 **최소 높이 138px**이 바닥이라, 세로가 줄어도 목록이 더는 줄지 못해 결정 패널이
-아래로 밀려 잘렸습니다. 바닥을 낮췄습니다. 높이 배분 자체는 폼의 `FitDecisionPanel`이 그대로
-맡아 결정 패널 높이를 먼저 지키고 남는 높이를 목록에 줍니다.
+## 2. 함께 들어오는 것 (2026-09-13 앞선 전달분과 동일)
 
-| 무엇 | 전 | 후 |
-|---|---|---|
-| 목록 최소 높이(`splitDurableDecision.Panel1MinSize`) | 138 | **80** |
-| 결정 패널 최소 높이(`splitDurableDecision.Panel2MinSize`) | 300 | **262** |
+- KPI 카드 넷의 `Flat` 제거 — 테두리·배경 복구, 카드 79 → 96 · 둘째 줄 91 → 108 · 그리드 166 → 176 ·
+  결정 카드 300 → 262.
+- 지속재 목록 최소 높이 138 → 80 — 창을 낮추면 목록이 줄고 결정 패널이 따라 올라옵니다.
 
-## 함께 들어오는 v0.58.0 손질
+## 3. 폼 코드에 손으로 넣을 것 — `EquipmentLotForm.cs`
 
-2026-09-10 전달분 이후 릴리즈에서 고친 배치도 이 파일에 함께 들어 있습니다.
+### 3-1. 필드 두 개 (`private bool fittingListPanels;` 아래)
 
-- 왼쪽 목록 열과 포트 열의 최소 높이 214 → 120 — 낮은 작업 영역에서 위 표만 줄었다가 복원됩니다.
-- `splitRight.FixedPanel = Panel2` · `Panel1MinSize` 360 → 230 — 오른쪽 실행 열 폭을 보존하고
-  가로 변화는 왼쪽이 흡수합니다. 바깥 `splitMain.KeepRatio`는 그대로입니다.
-- Job 버튼 셋이 `jobActions` 패널에 묶여 Job 카드 안으로 들어갔습니다.
+```csharp
+        private bool syncingActionColumns;
+        private string requestFieldShape = string.Empty;
+```
 
-**그래서 이 디자이너는 v0.58.0 기준의 `EquipmentLotForm.cs`와 짝입니다.** 회사 폼 소스가
-2026-09-10 전달분 그대로라면 이 파일만 바꾸지 마시고 알려 주세요 — 짝이 되는 `.cs`도 함께
-올리겠습니다.
+### 3-2. `SyncActionColumns` 첫 줄 교체 + 메서드 둘 추가
 
-## 확인해 주실 것
+```csharp
+        private void SyncActionColumns()
+        {
+            this.ApplyActionSplit(this.splitDurableDecision.Width);
+            this.lblTarget.Width = Math.Max(0, this.ddbEquipment.Left - this.lblTarget.Left - this.actionCard.Padding.Left);
+        }
 
-- 카드 테두리·배경이 돌아왔는지, 카드 안 내용이 잘리지 않는지.
-- 창을 낮췄을 때 목록이 먼저 줄고 결정 패널이 따라 올라오는지.
+        private void ApplyActionSplit(int jobWidth)
+        {
+            Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer actions = this.splitActions;
+            int room = actions.Width - actions.SplitterWidth;
 
-## 파일
+            if (room < actions.Panel1MinSize + actions.Panel2MinSize)
+            {
+                return;
+            }
 
-| 파일 | 무엇 |
-|---|---|
-| `Modern.Lab.Samples/Management/EquipmentLotForm.Designer.cs` | 이번 갱신분 — 위 내용 전부 |
-| `Modern.Lab.Samples/Management/EquipmentLotForm.cs` | 2026-09-10 전달분 그대로 |
-| `Modern.Lab.Samples/Management/Contracts/EquipmentLotContracts.cs` | 2026-09-10 전달분 그대로 |
-| `Modern.Lab.Samples/RequestInfoDialogForm.cs` | 2026-09-10 전달분 그대로 |
+            int job = Math.Max(actions.Panel2MinSize, Math.Min(jobWidth, room - actions.Panel1MinSize));
+            int distance = room - job;
+
+            if (actions.SplitterDistance == distance)
+            {
+                return;
+            }
+
+            this.syncingActionColumns = true;
+
+            try
+            {
+                actions.SplitterDistance = distance;
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            finally
+            {
+                this.syncingActionColumns = false;
+            }
+        }
+
+        private void OnActionSplitterMoved(object sender, SplitterEventArgs e)
+        {
+            if (this.syncingActionColumns)
+            {
+                return;
+            }
+
+            Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer actions = this.splitActions;
+            Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer right = this.splitRight;
+            int job = actions.Width - actions.SplitterWidth - actions.SplitterDistance;
+            int room = right.Width - right.SplitterWidth;
+
+            if (room < right.Panel1MinSize + right.Panel2MinSize)
+            {
+                return;
+            }
+
+            int decision = Math.Max(right.Panel2MinSize, Math.Min(job, room - right.Panel1MinSize));
+            int distance = room - decision;
+
+            this.syncingActionColumns = true;
+
+            try
+            {
+                if (right.SplitterDistance != distance)
+                {
+                    right.SplitterDistance = distance;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            finally
+            {
+                this.syncingActionColumns = false;
+            }
+
+            this.SyncActionColumns();
+        }
+```
+
+`OnActionSplitterMoved`는 디자이너가 `splitActions.SplitterMoved`에 거는 핸들러라 **이름이 정확해야**
+합니다.
+
+### 3-3. 의뢰서 목록 깜빡임 — `BindRequestFields` 안 (디자이너와 무관, 따로 적용 가능)
+
+조회할 때마다 필드 카드를 통째로 다시 만들어(`DefineFields`가 값을 비우고 정의를 다시 세운다) 카드가
+비워졌다 채워지고, 이어서 높이 재계산이 스플리터 배치를 건드려 아래 표까지 다시 그려졌습니다.
+자동 갱신 주기마다 반복됩니다.
+
+아홉 줄을 이렇게 바꿉니다.
+
+```csharp
+            string shape = RequestFieldShape(fields);
+
+            if (!string.Equals(shape, this.requestFieldShape, StringComparison.Ordinal))
+            {
+                this.fieldRequest.DefineFields(fields.ToArray());
+                this.requestFieldShape = shape;
+            }
+
+            this.fieldRequest.SetRow(row);
+            int fieldRows = (fields.Count + this.fieldRequest.Columns - 1) / this.fieldRequest.Columns;
+            int fieldHeight = Math.Max(1, fieldRows) * 40 * this.DeviceDpi / 96;
+            int remarkHeight = row == null ? 0 : 72 * this.DeviceDpi / 96;
+            int headerHeight = fieldHeight + remarkHeight;
+
+            if (this.tableRequestMaster.Height != headerHeight)
+            {
+                this.tableRequestMaster.RowStyles[0].Height = fieldHeight;
+                this.tableRequestMaster.RowStyles[1].Height = remarkHeight;
+                this.tableRequestMaster.Height = headerHeight;
+                this.FitRequestHeader(headerHeight);
+            }
+```
+
+그리고 `FitRequestHeader` 바로 앞에 비교용 헬퍼를 답니다(`using System.Text;`는 이미 있습니다).
+
+```csharp
+        private static string RequestFieldShape(List<ModernFieldDefinition> fields)
+        {
+            StringBuilder shape = new StringBuilder();
+
+            for (int index = 0; index < fields.Count; index++)
+            {
+                shape.Append(fields[index].Member).Append(fields[index].IsLink ? "*" : string.Empty).Append('|');
+            }
+
+            return shape.ToString();
+        }
+```
+
+**3-3 은 디자이너 없이 단독으로 적용됩니다** — 깜빡임만 먼저 보고 싶으시면 이것만 넣으셔도 됩니다.
+그때 필요한 필드는 `requestFieldShape` 하나뿐입니다.
+
+## 4. 확인해 주실 것
+
+- 아래 실행 줄의 구분선이 위쪽 스플리터와 한 줄로 이어지는지, 끌었을 때 위아래가 같이 움직이는지.
+- 의뢰서 목록의 깜빡임이 멎는지(자동 갱신을 켠 채로).
+
+## 5. 검증 상태
+
+홈에서 **솔루션 전체 빌드는 통과**했습니다. 화면 자체 검사는 이 구조 변경 뒤로 다시 돌리지 않았습니다 —
+배치가 눈으로 확인될 항목이라 회사 확인을 먼저 받는 쪽을 택했습니다.
