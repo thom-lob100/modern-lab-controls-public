@@ -1129,7 +1129,6 @@ namespace Modern.Lab.Samples
             if (this.portEqpId == this.decision.EqpId)
             {
                 this.cyclePortsReflected = true;
-                this.SyncDecisionDurablesIfReady();
             }
 
             this.dependentSerial++;
@@ -1164,8 +1163,25 @@ namespace Modern.Lab.Samples
                 return;
             }
 
-            DataRow inPort = EquipmentLotPresenter.TopPort(this.portData, ServerFields.Port.PortTyp.Input);
-            DataRow outPort = EquipmentLotPresenter.TopPort(this.portData, ServerFields.Port.PortTyp.Output);
+            string recommendedIn = TableHelper.CellText(this.decision.Equipment, ServerFields.Port.PortNm).Trim();
+            string recommendedOut = TableHelper.CellText(this.decision.Equipment, ServerFields.Equipment.GoalPortNm).Trim();
+
+            DataRow inPort = recommendedIn.Length > 0
+                    ? EquipmentLotPresenter.FindById(this.portData, ServerFields.Port.PortNm, recommendedIn)
+                    : null;
+            DataRow outPort = recommendedOut.Length > 0
+                    ? EquipmentLotPresenter.FindById(this.portData, ServerFields.Port.PortNm, recommendedOut)
+                    : null;
+
+            if (inPort == null)
+            {
+                inPort = EquipmentLotPresenter.TopPort(this.portData, ServerFields.Port.PortTyp.Input);
+            }
+
+            if (outPort == null)
+            {
+                outPort = EquipmentLotPresenter.TopPort(this.portData, ServerFields.Port.PortTyp.Output);
+            }
 
             if (inPort != null && EquipmentLotPresenter.PortType(inPort) == ServerFields.Port.PortTyp.InputOutput)
             {

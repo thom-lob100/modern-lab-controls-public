@@ -1,4 +1,35 @@
-# 임시 전달 — Equipment/Lots (2026-09-13, 갱신 5)
+# 임시 전달 — Equipment/Lots (2026-09-13, 갱신 6)
+
+## 0. 장비 행의 포트로 결정 패널을 즉시 채운다
+
+장비를 더블클릭하면 결정 패널이 **포트 조회 왕복을 기다린 뒤 지속재 조회까지 한 번 더** 기다렸습니다
+(`ResolveDecisionPorts`가 포트 행이 와야 In/Out 을 정할 수 있었고, 포트가 오면 `SyncDecisionDurablesIfReady`가
+지속재를 또 불렀습니다). 그래서 30초까지 걸릴 수 있었습니다.
+
+이제 **장비 행이 들고 온 포트 이름**을 씁니다.
+
+| 무엇 | 컬럼 |
+|---|---|
+| In 포트 | `PORT_NM` |
+| Out 포트 | `GOAL_PORT_NM` |
+
+- 더블클릭 즉시 결정 패널의 `In Port → Out Port`가 채워집니다. **서버 왕복 0회.**
+- 포트 목록이 도착하면 **그 이름과 같은 포트 행**을 잡습니다(없으면 예전처럼 우선순위 첫 포트).
+- 포트를 더블클릭하면 그 방향만 교체됩니다(Input→In, Output→Out, InputOutput→둘 다). 기존 동작 그대로입니다.
+- 포트 도착이 지속재 조회를 끌지 않습니다. 그룹이 같으면 지속재 타입이 같으므로 다시 받을 이유가 없습니다.
+
+### 바뀐 파일 셋
+
+| 파일 | 무엇 | 분량 |
+|---|---|---|
+| `Management/Contracts/ServerFields.cs` | `Equipment.GoalPortNm = "GOAL_PORT_NM"` | 한 줄 |
+| `Management/Services/JobDecision.cs` | `InPortNm`·`OutPortNm`이 포트 행이 없으면 장비 행 값을 쓴다 | 열 줄 남짓 |
+| `Management/EquipmentLotForm.cs` | `ResolveDecisionPorts`가 추천 이름과 같은 행을 잡는다 · `BindPorts`에서 지속재 동기화 호출 제거 | 열다섯 줄 남짓 |
+
+디자이너는 안 건드렸습니다(`476166e` 그대로).
+
+**홈 확인**: 홈 API 장비 조회에도 두 컬럼을 실어서 화면에 `Port`·`Goal Port`로 보입니다.
+캡처 `shots/equipment-lots-ports.png`.
 
 ## 0. 실행 패널이 Lot 리스트 아래까지 온다 — 중첩을 뒤집었습니다
 
