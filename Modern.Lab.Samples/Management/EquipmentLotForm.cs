@@ -8,15 +8,17 @@ using Modern.Lab.Controls.Wpf.Data;
 using Modern.Lab.Controls.Wpf.Display;
 using Modern.Lab.Controls.Wpf.Input;
 using Modern.Lab.Data;
-using Modern.Lab.Samples.Hosting;
-using Modern.Lab.Samples.Hosting.ResponseContracts;
-using Modern.Lab.Samples.Management.Contracts;
+using Modern.Lab.Hosting;
+using Modern.Lab.Hosting.ResponseContracts;
+using Modern.Lab.Samples.Contracts;
 using Modern.Lab.Samples.Services;
-using Modern.Lab.Samples.Management.Services;
+using Modern.Lab.Samples.Services;
 using Modern.Lab.WinForms.Controls.Data;
 using Modern.Lab.WinForms.Controls.Display;
 
-namespace Modern.Lab.Samples.Management
+using Modern.Lab.Hosting.Messaging;
+
+namespace Modern.Lab.Samples
 {
     public partial class EquipmentLotForm : ModernFormBase
     {
@@ -94,7 +96,12 @@ namespace Modern.Lab.Samples.Management
         private int decisionSplitHeightSeen = -1;
         private int decisionSplitDistanceSeen = -1;
         private bool fittingColumns;
+        private bool fittingListPanels;
+        private string requestFieldShape = string.Empty;
         private bool syncingListHeights;
+        private int listHeight;
+        private int listPanelHeightSeen;
+        private int listSplitDistanceSeen;
         private int decisionPending;
 
         private int intervalSeconds;
@@ -121,7 +128,11 @@ namespace Modern.Lab.Samples.Management
 
             this.splitRight.SizeChanged += this.OnBottomLayoutSizeChanged;
             this.splitDurableDecision.SizeChanged += this.OnBottomLayoutSizeChanged;
+            this.midPanel.SizeChanged += this.OnMidPanelSizeChanged;
             this.actionCard.SizeChanged += this.OnActionColumnSizeChanged;
+            this.listHeight = this.splitLeft.SplitterDistance;
+            this.listPanelHeightSeen = this.midPanel.ClientSize.Height;
+            this.listSplitDistanceSeen = this.listHeight;
             this.lblRequestRemarkCaption.ForeColor = Modern.Lab.Theming.ModernTheme.TextSecondary;
             this.SyncActionColumns();
         }
@@ -138,6 +149,7 @@ namespace Modern.Lab.Samples.Management
             }
 
             this.FitDecisionPanel();
+            this.FitListPanels();
             this.SyncActionColumns();
         }
 
@@ -416,7 +428,7 @@ namespace Modern.Lab.Samples.Management
 
         private void OnListSplitterMoved(object sender, SplitterEventArgs e)
         {
-            if (this.syncingListHeights)
+            if (this.syncingListHeights || this.fittingListPanels)
             {
                 return;
             }
@@ -429,6 +441,12 @@ namespace Modern.Lab.Samples.Management
             if (source == null)
             {
                 return;
+            }
+
+            if (this.midPanel.ClientSize.Height == this.listPanelHeightSeen
+                    && source.SplitterDistance != this.listSplitDistanceSeen)
+            {
+                this.listHeight = source.SplitterDistance;
             }
 
             int room = target.Height - target.SplitterWidth;
@@ -452,6 +470,45 @@ namespace Modern.Lab.Samples.Management
             {
                 this.syncingListHeights = false;
             }
+
+            this.listPanelHeightSeen = this.midPanel.ClientSize.Height;
+            this.listSplitDistanceSeen = distance;
+        }
+
+        private void OnMidPanelSizeChanged(object sender, EventArgs e)
+        {
+            this.FitListPanels();
+        }
+
+        private void FitListPanels()
+        {
+            int room = this.midPanel.ClientSize.Height - this.splitLeft.SplitterWidth;
+            int upperMinimum = Math.Max(this.splitLeft.Panel1MinSize, this.splitLotRequest.Panel1MinSize);
+            int lowerMinimum = Math.Max(this.splitLeft.Panel2MinSize, this.splitLotRequest.Panel2MinSize);
+
+            if (room < upperMinimum + lowerMinimum)
+            {
+                return;
+            }
+
+            int distance = Math.Max(upperMinimum, Math.Min(this.listHeight, room - lowerMinimum));
+            this.fittingListPanels = true;
+
+            try
+            {
+                this.splitLeft.SplitterDistance = distance;
+                this.splitLotRequest.SplitterDistance = distance;
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            finally
+            {
+                this.fittingListPanels = false;
+            }
+
+            this.listPanelHeightSeen = this.midPanel.ClientSize.Height;
+            this.listSplitDistanceSeen = distance;
         }
 
         private void OnBottomLayoutSizeChanged(object sender, EventArgs e)
@@ -714,26 +771,13 @@ namespace Modern.Lab.Samples.Management
         {
             string eqpId = this.decision.EqpId;
 
-            if (!this.silentRefresh)
-            {
-                this.ClearDecisionDependents();
-            }
-
             this.ResolveDecisionPorts();
             this.RefreshDecisionPanel();
             this.RefreshActionStates();
 
             this.cycleRefresh = this.silentRefresh;
             this.cyclePortsReflected = this.portEqpId != eqpId;
-            this.cycleLotsReflected = false;
-
-            if (eqpId.Length > 0)
-            {
-                this.LoadDecisionLots(this.SelectedGroupId(), eqpId);
-                return;
-            }
-
-            this.SyncDecisionDurables(false);
+            this.cycleLotsReflected = true;
         }
 
         private void ClearDecisionDependents()
@@ -842,7 +886,7 @@ namespace Modern.Lab.Samples.Management
 
             if (type.Length == 0 && this.durableData != null && this.durableData.Rows.Count > 0)
             {
-                type = TableHelper.CellText(this.durableData.Rows[0], ServerFields.Durable.DurableType).Trim();
+                type = TableHelper.CellText(this.durableData.Rows[0], ServerFields.Durable.DurableTyp).Trim();
             }
 
             return type;
@@ -1150,6 +1194,7 @@ namespace Modern.Lab.Samples.Management
                     .Badge(ServerFields.Lot.LastEventCd.Column, ServerFields.Lot.MesProcStatCd.Column)
                     .BadgeWidth(ServerFields.Lot.MesProcStatCd.Column, ServerFields.Lot.MesProcStatCd.All)
                     .Spin(ServerFields.Lot.LastEventCd.Column, EquipmentLotPresenter.JobStateStart)
+                    .Hide("REQ_NO")
                     .Link(ServerFields.Lot.ReqSerialNo));
 
             if (!merged || (this.lotData != null && colorsBefore != EquipmentLotPresenter.JobColorSignature(this.lotData)))
@@ -1197,7 +1242,7 @@ namespace Modern.Lab.Samples.Management
 
             ConfigureGrid(this.gridDurables, this.durableData, Judged(this.durableCurrent), columns => columns
                     .BadgeColor(ServerFields.Priority, EquipmentLotPresenter.PriorityColorColumn)
-                    .Badge(ServerFields.Durable.Mode, ServerFields.Durable.WfLoadStatCd.Column));
+                    .Badge(ServerFields.Durable.DurableStatCd, ServerFields.Durable.WfLoadStatCd.Column));
 
             if (!merged)
             {
@@ -1341,20 +1386,44 @@ namespace Modern.Lab.Samples.Management
                 });
             }
 
-            this.fieldRequest.DefineFields(fields.ToArray());
+            string shape = RequestFieldShape(fields);
+
+            if (!string.Equals(shape, this.requestFieldShape, StringComparison.Ordinal))
+            {
+                this.fieldRequest.DefineFields(fields.ToArray());
+                this.requestFieldShape = shape;
+            }
+
             this.fieldRequest.SetRow(row);
             int fieldRows = (fields.Count + this.fieldRequest.Columns - 1) / this.fieldRequest.Columns;
             int fieldHeight = Math.Max(1, fieldRows) * 40 * this.DeviceDpi / 96;
             int remarkHeight = row == null ? 0 : 72 * this.DeviceDpi / 96;
-            this.tableRequestMaster.RowStyles[0].Height = fieldHeight;
-            this.tableRequestMaster.RowStyles[1].Height = remarkHeight;
-            this.tableRequestMaster.Height = fieldHeight + remarkHeight;
-            this.FitRequestHeader(this.tableRequestMaster.Height);
+            int headerHeight = fieldHeight + remarkHeight;
+
+            if (this.tableRequestMaster.Height != headerHeight)
+            {
+                this.tableRequestMaster.RowStyles[0].Height = fieldHeight;
+                this.tableRequestMaster.RowStyles[1].Height = remarkHeight;
+                this.tableRequestMaster.Height = headerHeight;
+                this.FitRequestHeader(headerHeight);
+            }
             this.lblRequestRemarkCaption.Text = "Remarks";
             this.lblRequestRemark.Text = row == null ? string.Empty : ValueOrDash(remarks);
             this.panelRequestRemark.Visible = row != null;
             this.tableRequestMaster.Visible = row != null;
             this.lblRequestEmpty.Visible = row == null;
+        }
+
+        private static string RequestFieldShape(List<ModernFieldDefinition> fields)
+        {
+            StringBuilder shape = new StringBuilder();
+
+            for (int index = 0; index < fields.Count; index++)
+            {
+                shape.Append(fields[index].Member).Append(fields[index].IsLink ? "*" : string.Empty).Append('|');
+            }
+
+            return shape.ToString();
         }
 
         private void FitRequestHeader(int desiredHeight)
@@ -1483,19 +1552,15 @@ namespace Modern.Lab.Samples.Management
                 this.decision.OutPort = null;
                 this.ApplyPortChoice(port);
                 this.silentRefresh = false;
-                this.ClearDecisionDependents();
                 this.RefreshDecisionPanel();
                 this.RefreshActionStates();
                 this.cycleRefresh = false;
                 this.cyclePortsReflected = true;
-                this.cycleLotsReflected = false;
-                this.LoadDecisionLots(this.SelectedGroupId(), this.decision.EqpId);
-                this.SyncDecisionDurables(false);
+                this.cycleLotsReflected = true;
                 return;
             }
 
             this.ApplyPortChoice(port);
-            this.SyncDecisionDurables(false);
             this.RefreshDecisionPanel();
             this.RefreshActionStates();
         }
@@ -1526,7 +1591,6 @@ namespace Modern.Lab.Samples.Management
             }
 
             this.decision.Lot = lot;
-            this.SyncDecisionDurables(false);
             this.RefreshDecisionPanel();
             this.RefreshActionStates();
         }
@@ -1552,7 +1616,7 @@ namespace Modern.Lab.Samples.Management
 
             string inPort = TableHelper.CellText(summary, EquipmentLotPresenter.SummaryInPort);
             string outPort = TableHelper.CellText(summary, EquipmentLotPresenter.SummaryOutPort);
-            string durableType = TableHelper.CellText(summary, ServerFields.Durable.DurableType);
+            string durableType = TableHelper.CellText(summary, ServerFields.Durable.DurableTyp);
             string mode = TableHelper.CellText(summary, ServerFields.Equipment.CommStatTyp.Column);
             string jobState = TableHelper.CellText(summary, ServerFields.Lot.LastEventCd.Column);
 

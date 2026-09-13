@@ -1,87 +1,51 @@
-# 임시 전달 — Equipment/Lots 결정 패널 (2026-09-13, 갱신)
+# 임시 전달 — Equipment/Lots (2026-09-13, 갱신 2)
 
-**앞선 전달분의 스플리터 구조 변경은 물렸습니다.** 스플리터를 아래 실행 줄까지 내리면 왼쪽 장비·Lot
-열만 64px 더 내려와 열마다 바닥선이 어긋나서, 그 구조는 쓰지 않기로 했습니다. 이 파일에는 그 변경이
-없습니다 — 폼 코드에 `OnActionSplitterMoved` 같은 것을 넣을 필요도 없습니다.
+파일 둘입니다. `Modern.Lab.Commons.dll`은 바뀌지 않습니다.
 
-지금 들어 있는 것은 **결정 패널 두 가지**뿐이고, `Modern.Lab.Commons.dll`은 바뀌지 않습니다.
+## 1. 더블클릭이 서로 끌고 가지 않는다 — `EquipmentLotForm.cs`
 
-## 1. KPI 카드의 테두리·배경이 돌아왔습니다
+장비를 더블클릭하면 Lot·의뢰서·지속재 목록이 통째로 다시 조회되고 있었습니다. 결정 장비가 바뀌면
+`ClearDecisionDependents()`가 Lot·지속재 표를 비우고 `LoadDecisionLots()`가 그 장비 기준으로 Lot 을
+다시 받고 지속재가 따라가는 구조였습니다.
 
-카드 넷에 `Flat = true`가 들어가 테두리와 배경이 사라져 있었습니다(그 속성은 공용 카드 패널 위에 얹을
-때 크롬을 없애라고 만든 것입니다). 네 줄을 지우고, 크롬이 돌아온 만큼 자리를 함께 줬습니다.
+이제 이렇게 동작합니다.
 
-| 무엇 | 전 | 후 |
-|---|---|---|
-| KPI 카드 높이(`kpiEquipment`·`kpiPorts`·`kpiLot`·`kpiDurable`) | 79 | **96** |
-| 둘째 줄 Y(`kpiLot`·`kpiDurable`) | 91 | **108** |
-| KPI 그리드(`decisionGrid`) 높이 | 166 | **176** |
-| 결정 카드(`decisionCard`) 높이 | 300 | **262** |
+| 무엇을 더블클릭 | 무엇이 따라오나 |
+|---|---|
+| 장비 | **포트만** — 결정 장비·포트가 잡히고 결정 패널이 갱신됩니다 |
+| 포트 | 그 포트(필요하면 장비도) — Lot·지속재는 그대로 |
+| Lot | **Lot만** |
+| 지속재 | **지속재만** |
 
-## 2. 창을 낮추면 지속재 목록이 줄고 결정 패널이 따라 올라옵니다
+의뢰서 목록은 전과 같이 **Lot 선택**을 따라갑니다(결정이 아니라 선택입니다).
 
-지속재 목록의 최소 높이가 바닥이라 세로가 줄어도 더는 줄지 못해 결정 패널이 밀려 잘렸습니다.
+지운 호출은 넷입니다.
 
-| 무엇 | 전 | 후 |
-|---|---|---|
-| 목록 최소 높이(`splitDurableDecision.Panel1MinSize`) | 138 | **80** |
+- `ApplyEquipmentDecision` — `ClearDecisionDependents()` · `LoadDecisionLots(...)` · `SyncDecisionDurables(false)`
+- 포트 더블클릭(장비가 바뀌는 가지) — `ClearDecisionDependents()` · `LoadDecisionLots(...)` · `SyncDecisionDurables(false)`
+- 포트 더블클릭(같은 장비 가지) — `SyncDecisionDurables(false)`
+- `OnLotRowDoubleClick` — `SyncDecisionDurables(false)`
 
-## 3. 의뢰서 목록 깜빡임 — 폼 코드 (선택, 디자이너와 무관)
+Lot·지속재 목록은 조회 버튼과 자동 갱신 주기에서만 다시 받습니다.
 
-`EquipmentLotForm.cs`의 `BindRequestFields`가 조회할 때마다 필드 카드를 통째로 다시 만듭니다
-(`DefineFields`가 값을 비우고 정의를 다시 세우고, 이어서 높이 재계산이 스플리터 배치를 건드려 아래
-표까지 다시 그려집니다). 자동 갱신 주기마다 반복됩니다.
+## 2. 의뢰서 목록 깜빡임 — 같은 파일에 포함
 
-필드 하나를 클래스에 추가하고
+`BindRequestFields`가 조회할 때마다 필드 카드를 통째로 다시 만들던 것을 고쳤습니다. 컬럼 구성이 그대로면
+다시 만들지 않고 값만 넣고, 높이도 실제로 달라질 때만 건드립니다.
 
-```csharp
-        private string requestFieldShape = string.Empty;
-```
+## 3. 결정 패널 — `EquipmentLotForm.Designer.cs` (앞선 전달분 그대로)
 
-`BindRequestFields` 안의 아홉 줄을 이렇게 바꿉니다.
+- KPI 카드 넷의 `Flat` 제거 — 테두리·배경 복구(카드 79→96 · 둘째 줄 91→108 · 그리드 166→176 ·
+  결정 카드 300→262).
+- 지속재 목록 최소 높이 138 → 80 — 창을 낮추면 목록이 줄고 결정 패널이 따라 올라옵니다.
 
-```csharp
-            string shape = RequestFieldShape(fields);
+## 검증 상태
 
-            if (!string.Equals(shape, this.requestFieldShape, StringComparison.Ordinal))
-            {
-                this.fieldRequest.DefineFields(fields.ToArray());
-                this.requestFieldShape = shape;
-            }
-
-            this.fieldRequest.SetRow(row);
-            int fieldRows = (fields.Count + this.fieldRequest.Columns - 1) / this.fieldRequest.Columns;
-            int fieldHeight = Math.Max(1, fieldRows) * 40 * this.DeviceDpi / 96;
-            int remarkHeight = row == null ? 0 : 72 * this.DeviceDpi / 96;
-            int headerHeight = fieldHeight + remarkHeight;
-
-            if (this.tableRequestMaster.Height != headerHeight)
-            {
-                this.tableRequestMaster.RowStyles[0].Height = fieldHeight;
-                this.tableRequestMaster.RowStyles[1].Height = remarkHeight;
-                this.tableRequestMaster.Height = headerHeight;
-                this.FitRequestHeader(headerHeight);
-            }
-```
-
-그리고 `FitRequestHeader` 바로 앞에 헬퍼를 답니다(`using System.Text;`는 이미 있습니다).
-
-```csharp
-        private static string RequestFieldShape(List<ModernFieldDefinition> fields)
-        {
-            StringBuilder shape = new StringBuilder();
-
-            for (int index = 0; index < fields.Count; index++)
-            {
-                shape.Append(fields[index].Member).Append(fields[index].IsLink ? "*" : string.Empty).Append('|');
-            }
-
-            return shape.ToString();
-        }
-```
+홈에서 **솔루션 빌드만** 확인했습니다. 화면 자체 검사는 돌리지 않았습니다.
 
 ## 파일
 
 | 파일 | 무엇 |
 |---|---|
-| `Modern.Lab.Samples/Management/EquipmentLotForm.Designer.cs` | 1·2번 — 디자이너만 바꾸면 됩니다 |
+| `Modern.Lab.Samples/Management/EquipmentLotForm.cs` | 1·2번 |
+| `Modern.Lab.Samples/Management/EquipmentLotForm.Designer.cs` | 3번 |
