@@ -1,4 +1,19 @@
-# 임시 전달 — Equipment/Lots (2026-09-13, 갱신 3)
+# 임시 전달 — Equipment/Lots (2026-09-13, 갱신 4)
+
+## 0-1. 최초 로드에서 Lot·지속재가 다시 뜹니다 — `EquipmentLotForm.cs`
+
+앞선 갱신에서 더블클릭 연쇄를 끊으면서 **최초 조회의 Lot·지속재 조회까지 같이 떨어져 나갔습니다.**
+그 조회를 결정 경로가 아니라 **조회 경로**(`BindEquipments` 끝)로 옮겼습니다.
+
+```csharp
+            this.LoadPorts(this.SelectedEquipmentId(), this.silentRefresh);
+            this.ApplyEquipmentDecision();
+            this.LoadDecisionLots(this.SelectedGroupId(), this.decision.EqpId);   // ← 추가
+            this.SyncDecisionDurables(false);                                    // ← 추가
+```
+
+- 화면을 열 때·조회 버튼·자동 갱신에서 네 목록이 모두 뜹니다.
+- 더블클릭은 여전히 자기 것만 결정합니다(장비→포트, Lot→Lot, 지속재→지속재).
 
 ## 0. 스플리터가 맨 아래 실행 줄까지 내려옵니다 — `EquipmentLotForm.Designer.cs`
 

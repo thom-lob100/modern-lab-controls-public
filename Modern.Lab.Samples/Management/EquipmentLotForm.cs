@@ -726,6 +726,8 @@ namespace Modern.Lab.Samples
 
             this.LoadPorts(this.SelectedEquipmentId(), this.silentRefresh);
             this.ApplyEquipmentDecision();
+            this.LoadDecisionLots(this.SelectedGroupId(), this.decision.EqpId);
+            this.SyncDecisionDurables(false);
         }
 
         private static void FollowServerOrder(DataTable table, DataTable source, string keyColumn)
