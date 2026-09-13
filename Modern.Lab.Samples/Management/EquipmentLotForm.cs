@@ -675,6 +675,8 @@ namespace Modern.Lab.Samples
                     EquipmentLotContracts.EquipmentTable, this.equipmentData, ref this.equipmentCurrent, ref this.equipmentReserved,
                     equipments, ServerFields.Equipment.EqpId, silent, out merged);
 
+            this.decision.EquipmentList = this.equipmentData;
+
             if (Judged(this.equipmentCurrent))
             {
                 EquipmentLotPresenter.MarkAutoCan(this.equipmentData);
@@ -827,6 +829,14 @@ namespace Modern.Lab.Samples
 
         private void SyncDecisionDurables(bool refresh)
         {
+            if (EquipmentLotPresenter.HasActiveJob(this.decision.Lot))
+            {
+                this.dependentSerial++;
+                this.RefreshDecisionPanel();
+                this.RefreshActionStates();
+                return;
+            }
+
             string eqpId = this.decision.EqpId;
             bool portsKnown = eqpId.Length > 0 && this.decisionPortEqpId == eqpId;
             string portNm = EquipmentLotPresenter.JobOutPortNm(this.decision.Lot);
@@ -1138,6 +1148,11 @@ namespace Modern.Lab.Samples
 
         private void ResolveDecisionPorts()
         {
+            if (EquipmentLotPresenter.HasActiveJob(this.decision.Lot))
+            {
+                return;
+            }
+
             if (this.portData == null || this.portEqpId.Length == 0 || this.portEqpId != this.decision.EqpId)
             {
                 return;
@@ -1303,7 +1318,12 @@ namespace Modern.Lab.Samples
         private async void LoadRequests(string lotId, string requestSerialNo, bool silent)
         {
             string key = (requestSerialNo ?? string.Empty).Trim();
-            this.ClearRequests();
+            bool sameRequest = silent && key.Length > 0 && key == this.requestSerialNo && this.requestData != null;
+
+            if (!sameRequest)
+            {
+                this.ClearRequests();
+            }
 
             this.requestLotId = lotId;
             this.requestSerialNo = key;
@@ -1365,7 +1385,7 @@ namespace Modern.Lab.Samples
             bool specimensMerged;
             this.specimenData = this.BindJudged(
                     EquipmentLotContracts.SpecimenTable, this.specimenData, ref this.specimenCurrent, ref this.specimenReserved,
-                    details, null, false, out specimensMerged);
+                    details, null, silent && merged, out specimensMerged);
 
             ConfigureGrid(this.gridSpecimens, this.specimenData, Judged(this.specimenCurrent), columns => columns);
 
@@ -1404,6 +1424,14 @@ namespace Modern.Lab.Samples
                 });
             }
 
+            int fieldColumns = RequestFieldColumns(fields.Count);
+
+            if (this.fieldRequest.Columns != fieldColumns)
+            {
+                this.fieldRequest.Columns = fieldColumns;
+                this.requestFieldShape = string.Empty;
+            }
+
             string shape = RequestFieldShape(fields);
 
             if (!string.Equals(shape, this.requestFieldShape, StringComparison.Ordinal))
@@ -1413,9 +1441,9 @@ namespace Modern.Lab.Samples
             }
 
             this.fieldRequest.SetRow(row);
-            int fieldRows = (fields.Count + this.fieldRequest.Columns - 1) / this.fieldRequest.Columns;
+            int fieldRows = (fields.Count + fieldColumns - 1) / fieldColumns;
             int fieldHeight = Math.Max(1, fieldRows) * 40 * this.DeviceDpi / 96;
-            int remarkHeight = row == null ? 0 : 72 * this.DeviceDpi / 96;
+            int remarkHeight = row == null ? 0 : RequestRemarkHeight * this.DeviceDpi / 96;
             int headerHeight = fieldHeight + remarkHeight;
 
             if (this.tableRequestMaster.Height != headerHeight)
@@ -1430,6 +1458,26 @@ namespace Modern.Lab.Samples
             this.panelRequestRemark.Visible = row != null;
             this.tableRequestMaster.Visible = row != null;
             this.lblRequestEmpty.Visible = row == null;
+        }
+
+        private const int RequestFieldBaseColumns = 3;
+
+        private const int RequestFieldMaxColumns = 4;
+
+        private const int RequestRemarkHeight = 104;
+
+        private const int RequestDetailMinHeight = 160;
+
+        private static int RequestFieldColumns(int count)
+        {
+            int columns = RequestFieldBaseColumns;
+
+            while (columns < RequestFieldMaxColumns && count > columns && count % columns == 1)
+            {
+                columns++;
+            }
+
+            return columns;
         }
 
         private static string RequestFieldShape(List<ModernFieldDefinition> fields)
@@ -1447,13 +1495,15 @@ namespace Modern.Lab.Samples
         private void FitRequestHeader(int desiredHeight)
         {
             int room = this.splitRequest.Height - this.splitRequest.SplitterWidth;
+            int detailMinimum = Math.Max(
+                    this.splitRequest.Panel2MinSize, RequestDetailMinHeight * this.DeviceDpi / 96);
 
-            if (room < this.splitRequest.Panel1MinSize + this.splitRequest.Panel2MinSize)
+            if (room < this.splitRequest.Panel1MinSize + detailMinimum)
             {
                 return;
             }
 
-            int maximum = room - this.splitRequest.Panel2MinSize;
+            int maximum = room - detailMinimum;
             int height = Math.Max(this.splitRequest.Panel1MinSize, Math.Min(desiredHeight, maximum));
 
             if (this.splitRequest.SplitterDistance == height)
@@ -1529,8 +1579,18 @@ namespace Modern.Lab.Samples
             return row;
         }
 
+        private bool JobRunMode()
+        {
+            return EquipmentLotPresenter.HasActiveJob(this.decision.Lot);
+        }
+
         private void OnEqpRowDoubleClick(object sender, EventArgs e)
         {
+            if (this.JobRunMode())
+            {
+                return;
+            }
+
             DataRow equipment = Candidate(this.gridEqp.SelectedItem);
 
             if (equipment == null
@@ -1548,6 +1608,11 @@ namespace Modern.Lab.Samples
 
         private void OnPortRowDoubleClick(object sender, EventArgs e)
         {
+            if (this.JobRunMode())
+            {
+                return;
+            }
+
             DataRow port = Candidate(this.gridPorts.SelectedItem);
 
             if (port == null)
@@ -1615,6 +1680,11 @@ namespace Modern.Lab.Samples
 
         private void OnDurableRowDoubleClick(object sender, EventArgs e)
         {
+            if (this.JobRunMode())
+            {
+                return;
+            }
+
             DataRow durable = Candidate(this.gridDurables.SelectedItem);
 
             if (durable == null)
@@ -1691,7 +1761,9 @@ namespace Modern.Lab.Samples
         {
             ActionGate gate = new ActionGate(Contracts);
 
-            Observe(gate, EquipmentLotContracts.EquipmentTable, this.equipmentCurrent, this.equipmentData, this.decision.Equipment);
+            Observe(
+                    gate, EquipmentLotContracts.EquipmentTable, this.equipmentCurrent, this.equipmentData,
+                    EquipmentLotPresenter.JobEquipment(this.decision));
 
             Observe(
                     gate, EquipmentLotContracts.PortTable, this.portCurrent, this.portData,

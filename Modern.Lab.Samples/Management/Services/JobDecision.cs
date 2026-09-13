@@ -11,6 +11,8 @@ namespace Modern.Lab.Samples.Services
     {
         public DataRow Equipment { get; set; }
 
+        public DataTable EquipmentList { get; set; }
+
         public DataRow InPort { get; set; }
 
         public DataRow OutPort { get; set; }

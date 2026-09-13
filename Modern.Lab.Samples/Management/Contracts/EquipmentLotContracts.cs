@@ -53,38 +53,54 @@ namespace Modern.Lab.Samples.Management.Contracts
                     .Action(
                             JobPrep,
                             EquipmentTable,
-                            ActionColumnRequirement.Required(ServerFields.Priority))
+                            ActionColumnRequirement.Required(ServerFields.Priority),
+                            ActionColumnRequirement.Status(ServerFields.Equipment.CommStatTyp.Column))
                     .Action(
                             JobPrep,
                             PortTable,
                             PortSlots(),
-                            ActionColumnRequirement.Required(ServerFields.Priority))
+                            ActionColumnRequirement.Required(ServerFields.Priority),
+                            ActionColumnRequirement.Status(ServerFields.Port.PortTyp.Column),
+                            ActionColumnRequirement.Status(ServerFields.Port.TransferStatCd.Column))
                     .Action(
                             JobPrep,
                             LotTable,
-                            ActionColumnRequirement.Required(ServerFields.Priority))
+                            ActionColumnRequirement.Required(ServerFields.Priority),
+                            ActionColumnRequirement.Status(ServerFields.Lot.LastEventCd.Column),
+                            ActionColumnRequirement.Status(ServerFields.Lot.LotHoldStatCd.Column),
+                            ActionColumnRequirement.Status(ServerFields.Lot.LotStatTyp.Column),
+                            ActionColumnRequirement.Status(ServerFields.Lot.MesProcStatCd.Column))
                     .Action(
                             JobPrep,
                             DurableTable,
-                            ActionColumnRequirement.Required(ServerFields.Priority))
+                            ActionColumnRequirement.Required(ServerFields.Priority),
+                            ActionColumnRequirement.Status(ServerFields.Durable.WfLoadStatCd.Column))
 
                     .Action(
                             JobStart,
                             EquipmentTable,
-                            ActionColumnRequirement.Required(ServerFields.Priority))
+                            ActionColumnRequirement.Required(ServerFields.Priority),
+                            ActionColumnRequirement.Status(ServerFields.Equipment.CommStatTyp.Column))
                     .Action(
                             JobStart,
                             LotTable,
-                            ActionColumnRequirement.Required(ServerFields.Priority))
+                            ActionColumnRequirement.Required(ServerFields.Priority),
+                            ActionColumnRequirement.Status(ServerFields.Lot.LastEventCd.Column),
+                            ActionColumnRequirement.Status(ServerFields.Lot.LotHoldStatCd.Column),
+                            ActionColumnRequirement.Required(ServerFields.Lot.EqpId))
 
                     .Action(
                             JobEnd,
                             EquipmentTable,
-                            ActionColumnRequirement.Required(ServerFields.Priority))
+                            ActionColumnRequirement.Required(ServerFields.Priority),
+                            ActionColumnRequirement.Status(ServerFields.Equipment.CommStatTyp.Column))
                     .Action(
                             JobEnd,
                             LotTable,
-                            ActionColumnRequirement.Required(ServerFields.Priority))
+                            ActionColumnRequirement.Required(ServerFields.Priority),
+                            ActionColumnRequirement.Status(ServerFields.Lot.LastEventCd.Column),
+                            ActionColumnRequirement.Status(ServerFields.Lot.LotHoldStatCd.Column),
+                            ActionColumnRequirement.Required(ServerFields.Lot.EqpId))
 
                     .Action(
                             AutoDecision,
@@ -135,6 +151,7 @@ namespace Modern.Lab.Samples.Management.Contracts
         {
             return new TableContract(LotTable)
                     .Key(ServerFields.Lot.LotId)
+                    .Standard(ServerFields.Lot.EqpId)
                     .StatusUnrestricted(ServerFields.Lot.LastEventCd.Column)
                     .Status(ServerFields.Lot.LotHoldStatCd.Column, ServerFields.Lot.LotHoldStatCd.All)
                     .Status(ServerFields.Lot.MesProcStatCd.Column, ServerFields.Lot.MesProcStatCd.All)
@@ -146,7 +163,8 @@ namespace Modern.Lab.Samples.Management.Contracts
         {
             return new TableContract(DurableTable)
                     .Key(ServerFields.Durable.DurableId)
-                    .Numeric(ServerFields.Durable.NumUsecnt)
+                    .Status(ServerFields.Durable.WfLoadStatCd.Column, ServerFields.Durable.WfLoadStatCd.All)
+                    .Numeric(ServerFields.Durable.UseNumcnt)
                     .Numeric(ServerFields.Priority);
         }
 
