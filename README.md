@@ -58,6 +58,10 @@
 `Management/Contracts/EquipmentLotContracts.cs` 는 **회사 네임스페이스(`Modern.Lab.Samples.Management.*`)를
 그대로 두었습니다.** 나머지 셋은 이전 전달분과 같은 형태입니다.
 
+**캡처**(홈 시드, 09-14 검사 실행에서 뜬 그대로):
+`shots/equipment-lots-2026-09-14.png` 전체 화면 · `shots/equipment-lots-2026-09-14-small.png` 작은 창에서
+시편 표가 머리와 몇 줄을 남기는 모습 · `shots/equipment-lots-2026-09-14-request-dialog.png` 의뢰서 팝업.
+
 **홈 검사**: `--uitest-equipment-lot` `PASS 209 / FAIL 10`. 남은 10건은 이번 변경 전부터 있던 것으로
 같은 목록이 그대로이고(Refresh 버튼 폭, 홈 시드에서만 나는 더블클릭·Lock 항목), 이번에 더한 검사는
 모두 통과합니다.
