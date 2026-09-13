@@ -1,4 +1,4 @@
-namespace Modern.Lab.Samples.Management
+namespace Modern.Lab.Samples
 {
     public partial class EquipmentLotForm
     {
@@ -244,7 +244,7 @@ namespace Modern.Lab.Samples.Management
             this.splitLeft.Name = "splitLeft";
             this.splitLeft.Orientation = System.Windows.Forms.Orientation.Horizontal;
             this.splitLeft.Panel1.Controls.Add(this.eqpCard);
-            this.splitLeft.Panel1MinSize = 214;
+            this.splitLeft.Panel1MinSize = 120;
             this.splitLeft.Panel2.Controls.Add(this.lotCard);
             this.splitLeft.Panel2.Padding = new System.Windows.Forms.Padding(0);
             this.splitLeft.Panel2MinSize = 300;
@@ -283,7 +283,7 @@ namespace Modern.Lab.Samples.Management
             this.splitLotRequest.Name = "splitLotRequest";
             this.splitLotRequest.Panel1.Controls.Add(this.portCard);
             this.splitLotRequest.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            this.splitLotRequest.Panel1MinSize = 214;
+            this.splitLotRequest.Panel1MinSize = 120;
             this.splitLotRequest.Panel2.Controls.Add(this.requestCard);
             this.splitLotRequest.Panel2.Padding = new System.Windows.Forms.Padding(0);
             this.splitLotRequest.Panel2MinSize = 300;
@@ -322,12 +322,12 @@ namespace Modern.Lab.Samples.Management
             this.splitDurableDecision.Name = "splitDurableDecision";
             this.splitDurableDecision.Orientation = System.Windows.Forms.Orientation.Horizontal;
             this.splitDurableDecision.Panel1.Controls.Add(this.durableCard);
-            this.splitDurableDecision.Panel1MinSize = 138;
+            this.splitDurableDecision.Panel1MinSize = 80;
             this.splitDurableDecision.Panel2.Controls.Add(this.decisionCard);
             this.splitDurableDecision.Panel2.Padding = new System.Windows.Forms.Padding(0);
-            this.splitDurableDecision.Panel2MinSize = 300;
+            this.splitDurableDecision.Panel2MinSize = 262;
             this.splitDurableDecision.Size = new System.Drawing.Size(412, 876);
-            this.splitDurableDecision.SplitterDistance = 568;
+            this.splitDurableDecision.SplitterDistance = 640;
             this.splitDurableDecision.SplitterWidth = 8;
             this.splitDurableDecision.TabIndex = 0;
             this.splitDurableDecision.TabStop = false;
@@ -337,7 +337,7 @@ namespace Modern.Lab.Samples.Management
             this.durableCard.Location = new System.Drawing.Point(0, 0);
             this.durableCard.Name = "durableCard";
             this.durableCard.Padding = new System.Windows.Forms.Padding(6, 40, 6, 6);
-            this.durableCard.Size = new System.Drawing.Size(412, 568);
+            this.durableCard.Size = new System.Drawing.Size(412, 640);
             this.durableCard.TabIndex = 0;
             this.durableCard.Text = "Durable List (Target)";
             this.durableCard.TitleBar = true;
@@ -441,18 +441,18 @@ namespace Modern.Lab.Samples.Management
             this.gridSpecimens.TabIndex = 1;
             this.gridSpecimens.Child = null;
             this.splitRight.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitRight.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.splitRight.Location = new System.Drawing.Point(0, 0);
             this.splitRight.Name = "splitRight";
             this.splitRight.Orientation = System.Windows.Forms.Orientation.Vertical;
             this.splitRight.Panel1.Controls.Add(this.splitLotRequest);
-            this.splitRight.Panel1MinSize = 360;
+            this.splitRight.Panel1MinSize = 230;
             this.splitRight.Panel2.Controls.Add(this.splitDurableDecision);
             this.splitRight.Panel2.Padding = new System.Windows.Forms.Padding(0);
             this.splitRight.Panel2MinSize = 320;
             this.splitRight.Size = new System.Drawing.Size(916, 876);
             this.splitRight.SplitterDistance = 496;
             this.splitRight.SplitterWidth = 8;
-            this.splitRight.KeepRatio = true;
             this.splitRight.TabIndex = 0;
             this.splitRight.TabStop = false;
             this.portCard.Controls.Add(this.gridPorts);
@@ -482,12 +482,11 @@ namespace Modern.Lab.Samples.Management
             this.decisionCard.Controls.Add(this.decisionBusy);
             this.decisionCard.Controls.Add(this.decisionGrid);
             this.decisionCard.Controls.Add(this.decisionBar);
-            this.decisionCard.Controls.Add(this.jobActions);
             this.decisionCard.Dock = System.Windows.Forms.DockStyle.Fill;
             this.decisionCard.Location = new System.Drawing.Point(0, 0);
             this.decisionCard.Name = "decisionCard";
             this.decisionCard.Padding = new System.Windows.Forms.Padding(6, 40, 6, 6);
-            this.decisionCard.Size = new System.Drawing.Size(412, 300);
+            this.decisionCard.Size = new System.Drawing.Size(412, 262);
             this.decisionCard.TabIndex = 0;
             this.decisionCard.Text = "Decision";
             this.decisionCard.TitleBar = true;
@@ -511,13 +510,13 @@ namespace Modern.Lab.Samples.Management
             this.decisionGrid.RowCount = 2;
             this.decisionGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.decisionGrid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.decisionGrid.Size = new System.Drawing.Size(400, 166);
+            this.decisionGrid.Size = new System.Drawing.Size(400, 176);
             this.decisionGrid.TabIndex = 0;
             this.kpiEquipment.Dock = System.Windows.Forms.DockStyle.Fill;
             this.kpiEquipment.Location = new System.Drawing.Point(4, 4);
             this.kpiEquipment.Margin = new System.Windows.Forms.Padding(4);
             this.kpiEquipment.Name = "kpiEquipment";
-            this.kpiEquipment.Size = new System.Drawing.Size(246, 79);
+            this.kpiEquipment.Size = new System.Drawing.Size(246, 96);
             this.kpiEquipment.TabIndex = 0;
             this.kpiEquipment.Title = "Equipment";
             this.kpiEquipment.Value = "-";
@@ -525,23 +524,23 @@ namespace Modern.Lab.Samples.Management
             this.kpiPorts.Location = new System.Drawing.Point(258, 4);
             this.kpiPorts.Margin = new System.Windows.Forms.Padding(4);
             this.kpiPorts.Name = "kpiPorts";
-            this.kpiPorts.Size = new System.Drawing.Size(246, 79);
+            this.kpiPorts.Size = new System.Drawing.Size(246, 96);
             this.kpiPorts.TabIndex = 1;
             this.kpiPorts.Title = "In Port → Out Port";
             this.kpiPorts.Value = "-";
             this.kpiLot.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.kpiLot.Location = new System.Drawing.Point(4, 91);
+            this.kpiLot.Location = new System.Drawing.Point(4, 108);
             this.kpiLot.Margin = new System.Windows.Forms.Padding(4);
             this.kpiLot.Name = "kpiLot";
-            this.kpiLot.Size = new System.Drawing.Size(246, 79);
+            this.kpiLot.Size = new System.Drawing.Size(246, 96);
             this.kpiLot.TabIndex = 2;
             this.kpiLot.Title = "Lot";
             this.kpiLot.Value = "-";
             this.kpiDurable.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.kpiDurable.Location = new System.Drawing.Point(258, 91);
+            this.kpiDurable.Location = new System.Drawing.Point(258, 108);
             this.kpiDurable.Margin = new System.Windows.Forms.Padding(4);
             this.kpiDurable.Name = "kpiDurable";
-            this.kpiDurable.Size = new System.Drawing.Size(246, 79);
+            this.kpiDurable.Size = new System.Drawing.Size(246, 96);
             this.kpiDurable.TabIndex = 3;
             this.kpiDurable.Title = "Durable";
             this.kpiDurable.Value = "-";
@@ -549,7 +548,7 @@ namespace Modern.Lab.Samples.Management
             this.decisionBar.Controls.Add(this.badgeJob);
             this.decisionBar.Controls.Add(this.btnLock);
             this.decisionBar.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.decisionBar.Location = new System.Drawing.Point(6, 206);
+            this.decisionBar.Location = new System.Drawing.Point(6, 216);
             this.decisionBar.Name = "decisionBar";
             this.decisionBar.Size = new System.Drawing.Size(400, 40);
             this.decisionBar.TabIndex = 1;
@@ -585,14 +584,14 @@ namespace Modern.Lab.Samples.Management
             this.jobActions.Controls.Add(this.btnJobPrep, 0, 0);
             this.jobActions.Controls.Add(this.btnJobStart, 1, 0);
             this.jobActions.Controls.Add(this.btnJobEnd, 2, 0);
-            this.jobActions.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.jobActions.Location = new System.Drawing.Point(6, 246);
+            this.jobActions.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.jobActions.Location = new System.Drawing.Point(12, 8);
             this.jobActions.Margin = new System.Windows.Forms.Padding(0);
             this.jobActions.Name = "jobActions";
             this.jobActions.Padding = new System.Windows.Forms.Padding(0, 4, 0, 0);
             this.jobActions.RowCount = 1;
             this.jobActions.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.jobActions.Size = new System.Drawing.Size(400, 48);
+            this.jobActions.Size = new System.Drawing.Size(324, 40);
             this.jobActions.TabIndex = 2;
             this.gapBottom.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.gapBottom.Location = new System.Drawing.Point(12, 724);
@@ -600,6 +599,8 @@ namespace Modern.Lab.Samples.Management
             this.gapBottom.Size = new System.Drawing.Size(1776, 8);
             this.gapBottom.TabIndex = 5;
             this.bottomPanel.Controls.Add(this.actionCard);
+            this.bottomPanel.Controls.Add(this.gapActions);
+            this.bottomPanel.Controls.Add(this.jobCard);
             this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.bottomPanel.Location = new System.Drawing.Point(12, 732);
             this.bottomPanel.Name = "bottomPanel";
@@ -615,7 +616,7 @@ namespace Modern.Lab.Samples.Management
             this.actionCard.Location = new System.Drawing.Point(0, 0);
             this.actionCard.Name = "actionCard";
             this.actionCard.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
-            this.actionCard.Size = new System.Drawing.Size(1776, 56);
+            this.actionCard.Size = new System.Drawing.Size(1420, 56);
             this.actionCard.TabIndex = 0;
             this.lblTarget.BackColor = System.Drawing.Color.Transparent;
             this.lblTarget.Kind = Modern.Lab.Controls.Wpf.Display.LabelKind.Label;
@@ -643,6 +644,7 @@ namespace Modern.Lab.Samples.Management
             this.ddbPort.ItemClicked += new System.EventHandler<Modern.Lab.Controls.Wpf.Input.DropDownItemClickedEventArgs>(this.OnPortActionClicked);
             this.ddbPort.Child = null;
             this.jobCard.Dock = System.Windows.Forms.DockStyle.Right;
+            this.jobCard.Controls.Add(this.jobActions);
             this.jobCard.Location = new System.Drawing.Point(1428, 0);
             this.jobCard.Name = "jobCard";
             this.jobCard.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
