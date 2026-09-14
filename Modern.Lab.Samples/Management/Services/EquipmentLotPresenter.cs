@@ -224,6 +224,23 @@ namespace Modern.Lab.Samples.Services
             return null;
         }
 
+        public static string JobGoalCarrierId(DataRow lot)
+        {
+            return HasActiveJob(lot) ? TableHelper.CellText(lot, ServerFields.Lot.GoalCarrierId).Trim() : string.Empty;
+        }
+
+        public static string DecidedDurableId(JobDecision decision)
+        {
+            if (decision == null)
+            {
+                return string.Empty;
+            }
+
+            string goal = JobGoalCarrierId(decision.Lot);
+
+            return goal.Length > 0 ? goal : decision.DurableId;
+        }
+
         public static bool HasActiveJob(DataRow lot)
         {
             string state = JobState(lot);

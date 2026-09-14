@@ -835,6 +835,19 @@ namespace Modern.Lab.Samples
         {
             if (EquipmentLotPresenter.HasActiveJob(this.decision.Lot))
             {
+                string goalDurableId = EquipmentLotPresenter.JobGoalCarrierId(this.decision.Lot);
+
+                if (goalDurableId.Length > 0 && this.decision.DurableId != goalDurableId)
+                {
+                    DataRow goalDurable = EquipmentLotPresenter.FindById(
+                            this.durableData, ServerFields.Durable.DurableId, goalDurableId);
+
+                    if (goalDurable != null)
+                    {
+                        this.decision.Durable = goalDurable;
+                    }
+                }
+
                 this.dependentSerial++;
                 this.RefreshDecisionPanel();
                 this.RefreshActionStates();
@@ -1741,7 +1754,8 @@ namespace Modern.Lab.Samples
         {
             this.eqpCard.TitleRightText = DecidedTitle(this.decision.EqpId, this.equipmentData, "equipment");
             this.lotCard.TitleRightText = DecidedTitle(this.decision.LotId, this.lotData, "lots");
-            this.durableCard.TitleRightText = DecidedTitle(this.decision.DurableId, this.durableData, "durables");
+            this.durableCard.TitleRightText = DecidedTitle(
+                    EquipmentLotPresenter.DecidedDurableId(this.decision), this.durableData, "durables");
 
             string ports = this.decision.InPortNm.Length == 0 && this.decision.OutPortNm.Length == 0
                     ? string.Empty
