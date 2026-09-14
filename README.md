@@ -4,7 +4,7 @@
 > 저장소를 그냥 열면 `main` 이 보이는데 거기에는 이 파일들이 없습니다.
 > 주소: `https://github.com/thom-lob100/modern-lab-controls-public/tree/transfer-2026-09-15`
 
-오늘 전달은 **서로 다른 세 덩어리**입니다. 필요한 것만 가져가시면 되고, 서로 의존하지 않습니다.
+오늘 전달은 **서로 다른 네 덩어리**입니다. 필요한 것만 가져가시면 되고, 서로 의존하지 않습니다.
 
 ## A. 기준정보 CRUD 공통화 (Product · Flow · Oper)
 
@@ -62,7 +62,27 @@ FieldDefinitions.Of(lots)
 - 값이 비면 배지 대신 기존처럼 "-" 를 그립니다.
 - **배지 필드가 없는 화면은 비용이 0입니다** — 이미 적용하신 폼 소스는 한 줄도 바뀌지 않습니다.
 
-## C. 그 앞 전달분 (Equipment/Lots) — 아래 절 그대로
+## C. 신규 행 표시를 컬럼에서 행 배경 틴트로
+
+Durable·Lot 목록의 신규 표시가 `New` 배지 **컬럼**에서 **행 배경 틴트**로 바뀝니다. 컬럼이 목록 폭을
+먹던 것이 출발점이고, 무엇이 신규인지 가르는 규칙(같은 조회 조건의 직전 성공 결과와의 차집합)은
+그대로입니다. Equipment Port 는 장비 트리에 행 색 경로가 없어 **배지 컬럼을 유지**합니다.
+
+틴트 색은 처음에 액센트(파랑)를 섞었는데 선택 배경(`#B6D9F2`)과 같은 계열이라 **사용자가 신규 행을
+선택된 행으로 읽었습니다.** 지금은 `Brush.Success` 를 섞은 `#DAF0E2` 로 계열을 갈랐습니다.
+
+| 파일 | 무엇 |
+|---|---|
+| `Management/Services/NewItemTint.cs` | **새 파일** — 행 틴트 색을 만든다(표면에 성공색을 섞음) · 틴트 컬럼 이름 |
+| `Management/Services/NewItemTracker.cs` | 신규 판정(직전 성공 결과와의 차집합) — 틴트 경로에 맞춤 |
+| `Management/LotManagementForm.cs` · `Management/LotManagementForm.Contracts.cs` | Lot 목록의 신규 표시를 행 틴트로 |
+| `Management/DurableManagementForm.cs` | Durable 목록의 신규 표시를 행 틴트로 |
+| `Management/Services/LotManagementPresenter.cs` · `Management/Services/DurableManagementPresenter.cs` | 같은 회차에서 함께 바뀜 |
+
+`NewItemTint.cs` 는 **새 파일이라 프로젝트 등록**이 필요합니다. 신규 표시 화면 검사 55/0 이고 실제
+화면으로도 확인했습니다.
+
+## D. 그 앞 전달분 (Equipment/Lots) — 아래 절 그대로
 
 `transfer-2026-09-14` 에서 받아 가시던 여섯 파일은 이 브랜치에도 그대로 있습니다. 아직 안 받으셨으면
 아래 「받아 갈 파일 — 여섯」 절을 보세요.
