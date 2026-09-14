@@ -4,16 +4,27 @@
 > 저장소를 그냥 열면 `main` 이 보이는데 거기에는 이 파일들이 없습니다(2026-09-14 에 실제로 헛걸음이
 > 있었습니다). 주소: `https://github.com/thom-lob100/modern-lab-controls-public/tree/transfer-2026-09-14`
 
-## 오늘 받아 갈 파일 (여섯)
+## 지금 받아 갈 파일 — **셋뿐입니다** (마지막 갱신에서 바뀐 것)
 
-| 파일 | 이번에 바뀐 것 |
+| 파일 | 바뀐 것 |
 |---|---|
-| `Management/EquipmentLotForm.cs` | 의뢰서 카드 깜빡임 가드 · Remarks 두 줄 · 작업 모드 더블클릭 가드 |
-| `Management/EquipmentLotForm.Designer.cs` | Remarks 영역 스크롤(`AutoScroll`) · 본문 라벨 `AutoSize` |
-| `Management/Services/TableMerge.cs` | **이번에 처음 나갑니다** — 키 없는 표도 제자리에서 갱신(시편 표 깜빡임) |
+| `Management/EquipmentLotForm.cs` | Remarks 두 줄(`RequestRemarkHeight = 64`) |
+| `Management/EquipmentLotForm.Designer.cs` | Remarks 영역 스크롤(`AutoScroll`) · 본문 라벨 `AutoSize` + `Dock = Top` |
+| `Management/Services/TableMerge.cs` | **처음 나갑니다** — 키 없는 표도 제자리에서 갱신(시편 표 깜빡임) |
+
+### 이미 받아 가신 것 (아침 전달분 — 다시 받을 필요 없습니다)
+
+같은 브랜치에 그대로 있지만 **마지막 갱신에서 한 줄도 바뀌지 않았습니다.**
+
+| 파일 | 무엇 |
+|---|---|
 | `Management/Services/EquipmentLotPresenter.cs` | 통신 모드를 Lot 의 장비에서 읽음 · Start/End 장비 일치 조건 제거 |
 | `Management/Services/JobDecision.cs` | 결정이 장비 목록을 들고 다님(`EquipmentList`) |
 | `Management/Contracts/EquipmentLotContracts.cs` | 게이트가 보는 상태 컬럼 목록 |
+| `Management/Contracts/ServerFields.cs` | 장비 행의 `GOAL_PORT_NM` (그 앞 전달분) |
+
+`EquipmentLotForm.cs` 는 아침 것에서 **Remarks 높이 한 줄만** 더 바뀌었습니다. 아침 것을 이미 넣으셨다면
+`RequestRemarkHeight` 값을 `104` 에서 `64` 로 고치고 Designer 두 줄만 넣어도 같은 결과입니다.
 
 받은 파일이 맞는지 확인: `EquipmentLotForm.cs` 에 **`sameRequest` 가 2 번**, `RequestRemarkHeight` 가 있고
 값이 **64** 면 오늘 것입니다.
