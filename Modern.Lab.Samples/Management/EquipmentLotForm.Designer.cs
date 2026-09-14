@@ -58,6 +58,7 @@ namespace Modern.Lab.Samples
             this.gridDurables = new Modern.Lab.WinForms.Controls.Data.ModernDataGrid();
             this.decisionCard = new Modern.Lab.WinForms.Controls.Layout.ModernGroupBox();
             this.decisionBusy = new Modern.Lab.WinForms.Controls.Display.ModernBusyOverlay();
+            this.requestBusy = new Modern.Lab.WinForms.Controls.Display.ModernBusyOverlay();
             this.decisionGrid = new System.Windows.Forms.TableLayoutPanel();
             this.kpiEquipment = new Modern.Lab.WinForms.Controls.Display.ModernKpiCard();
             this.kpiPorts = new Modern.Lab.WinForms.Controls.Display.ModernKpiCard();
@@ -351,7 +352,15 @@ namespace Modern.Lab.Samples
             this.gridDurables.TabIndex = 0;
             this.gridDurables.RowDoubleClick += new System.EventHandler(this.OnDurableRowDoubleClick);
             this.gridDurables.Child = null;
+            this.requestCard.Controls.Add(this.requestBusy);
             this.requestCard.Controls.Add(this.splitRequest);
+            this.requestBusy.Location = new System.Drawing.Point(100, 250);
+            this.requestBusy.Message = "Loading request...";
+            this.requestBusy.Name = "requestBusy";
+            this.requestBusy.Size = new System.Drawing.Size(300, 120);
+            this.requestBusy.TabIndex = 2;
+            this.requestBusy.Visible = false;
+            this.requestBusy.Child = null;
             this.requestCard.Dock = System.Windows.Forms.DockStyle.Fill;
             this.requestCard.Location = new System.Drawing.Point(0, 0);
             this.requestCard.Name = "requestCard";
@@ -778,6 +787,7 @@ namespace Modern.Lab.Samples
         private Modern.Lab.WinForms.Controls.Data.ModernDataGrid gridDurables;
         private Modern.Lab.WinForms.Controls.Layout.ModernGroupBox decisionCard;
         private Modern.Lab.WinForms.Controls.Display.ModernBusyOverlay decisionBusy;
+        private Modern.Lab.WinForms.Controls.Display.ModernBusyOverlay requestBusy;
         private System.Windows.Forms.TableLayoutPanel decisionGrid;
         private Modern.Lab.WinForms.Controls.Display.ModernKpiCard kpiEquipment;
         private Modern.Lab.WinForms.Controls.Display.ModernKpiCard kpiPorts;

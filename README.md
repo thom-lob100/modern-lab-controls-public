@@ -1,16 +1,21 @@
-# 임시 전달 — Equipment/Lots (2026-09-14, 갱신 8)
+# 임시 전달 — Equipment/Lots (2026-09-14, 갱신 9)
 
 > **이 브랜치에서 받으세요 — `transfer-2026-09-14`.**
 > 저장소를 그냥 열면 `main` 이 보이는데 거기에는 이 파일들이 없습니다(2026-09-14 에 실제로 헛걸음이
 > 있었습니다). 주소: `https://github.com/thom-lob100/modern-lab-controls-public/tree/transfer-2026-09-14`
 
-## 지금 받아 갈 파일 — **셋뿐입니다** (마지막 갱신에서 바뀐 것)
+## 지금 받아 갈 파일 — **둘뿐입니다** (마지막 갱신에서 바뀐 것)
 
 | 파일 | 바뀐 것 |
 |---|---|
-| `Management/EquipmentLotForm.cs` | Remarks 두 줄(`RequestRemarkHeight = 64`) |
-| `Management/EquipmentLotForm.Designer.cs` | Remarks 영역 스크롤(`AutoScroll`) · 본문 라벨 `AutoSize` + `Dock = Top` |
-| `Management/Services/TableMerge.cs` | **처음 나갑니다** — 키 없는 표도 제자리에서 갱신(시편 표 깜빡임) |
+| `Management/EquipmentLotForm.cs` | **Lot 클릭 시 카드를 비우지 않고 로딩 표시로 덮는다** · Remarks 두 줄 |
+| `Management/EquipmentLotForm.Designer.cs` | **의뢰서 카드 로딩 표시(`requestBusy`) 추가** · Remarks 영역 스크롤 |
+
+### 그 앞 갱신에서 받아 가신 것 (다시 받을 필요 없습니다)
+
+| 파일 | 무엇 |
+|---|---|
+| `Management/Services/TableMerge.cs` | 키 없는 표도 제자리에서 갱신(시편 표 깜빡임) |
 
 ### 이미 받아 가신 것 (아침 전달분 — 다시 받을 필요 없습니다)
 
@@ -31,6 +36,27 @@
 
 `ServerFields.cs` 는 이번 전달에 넣지 않았습니다. 홈에서는 상위 Common 으로 옮겼지만 회사 적용은
 따로 정하기로 했으므로, 전달본에서는 그 이동에 딸린 `using` 한 줄을 빼 두었습니다.
+
+## 0. Lot 을 클릭할 때도 의뢰서 카드가 깜빡이지 않습니다
+
+자동 갱신 쪽은 앞 갱신으로 멎었는데, **사람이 다른 Lot 을 고를 때는 그대로였습니다.** 카드를 먼저
+비우고 서버를 불렀기 때문에 왕복 동안 빈 카드가 보였습니다.
+
+- 이제 **이전 내용을 둔 채 로딩 표시를 덮고**, 응답이 정착하면 한 번에 바꿉니다.
+- 덮는 순간 최신 성공 스냅숏을 버리므로 그 사이 **의뢰서 팝업은 열리지 않습니다.** 낡은 값을 지금
+  값으로 오인시키지 않기 위한 것입니다.
+- 조회가 **실패하면 그때 비웁니다.**
+- 고른 Lot 의 `REQ_SERIAL_NO` 가 지금 보고 있는 것과 같으면 **전문조차 나가지 않고** 카드도 건드리지
+  않습니다.
+
+디자이너에 추가된 것은 로딩 표시 하나입니다.
+
+```csharp
+this.requestBusy = new Modern.Lab.WinForms.Controls.Display.ModernBusyOverlay();
+this.requestCard.Controls.Add(this.requestBusy);
+this.requestBusy.Message = "Loading request...";
+this.requestBusy.Visible = false;
+```
 
 ## 0. Remarks 는 두 줄, 넘치면 그 안에서 스크롤합니다
 

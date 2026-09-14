@@ -1302,7 +1302,15 @@ namespace Modern.Lab.Samples
                 return;
             }
 
-            this.LoadRequests(this.SelectedLotId(), this.SelectedRequestSerialNo(), false);
+            string key = this.SelectedRequestSerialNo();
+
+            if (key.Length > 0 && key == this.requestSerialNo && this.requestData != null)
+            {
+                this.requestLotId = this.SelectedLotId();
+                return;
+            }
+
+            this.LoadRequests(this.SelectedLotId(), key, false);
         }
 
         private void OnPortSelectionChanged(object sender, EventArgs e)
@@ -1319,10 +1327,18 @@ namespace Modern.Lab.Samples
         {
             string key = (requestSerialNo ?? string.Empty).Trim();
             bool sameRequest = silent && key.Length > 0 && key == this.requestSerialNo && this.requestData != null;
+            bool coverInstead = !sameRequest && !silent && key.Length > 0 && this.requestData != null;
 
-            if (!sameRequest)
+            if (!sameRequest && !coverInstead)
             {
                 this.ClearRequests();
+            }
+
+            if (coverInstead)
+            {
+                this.InvalidateChannel(channelRequests);
+                this.requestSnapshot = null;
+                this.requestBusy.Busy = true;
             }
 
             this.requestLotId = lotId;
@@ -1336,8 +1352,20 @@ namespace Modern.Lab.Samples
                 return;
             }
 
-            LoadOutcome<RequestSnapshot> outcome = await this.FetchAsync(
-                    channelRequests, () => this.FetchRequestSnapshot(key), silent);
+            LoadOutcome<RequestSnapshot> outcome;
+
+            try
+            {
+                outcome = await this.FetchAsync(
+                        channelRequests, () => this.FetchRequestSnapshot(key), silent);
+            }
+            finally
+            {
+                if (coverInstead && !this.requestBusy.IsDisposed)
+                {
+                    this.requestBusy.Busy = false;
+                }
+            }
 
             if (!outcome.IsCurrent || key != this.requestSerialNo)
             {
@@ -1346,6 +1374,14 @@ namespace Modern.Lab.Samples
 
             if (outcome.Failure != null)
             {
+                if (coverInstead)
+                {
+                    this.ClearRequests();
+                    this.requestLotId = lotId;
+                    this.requestSerialNo = key;
+                    this.UpdateRequestTitle();
+                }
+
                 this.BindRequests(null, false);
                 return;
             }
