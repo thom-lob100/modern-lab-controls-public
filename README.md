@@ -1,10 +1,75 @@
-# 임시 전달 — Equipment/Lots (2026-09-15, 갱신 10)
+# 임시 전달 (2026-09-15, 갱신 11)
 
-> **이 브랜치에서 받으세요 — `transfer-2026-09-14`.**
-> 저장소를 그냥 열면 `main` 이 보이는데 거기에는 이 파일들이 없습니다(2026-09-14 에 실제로 헛걸음이
-> 있었습니다). 주소: `https://github.com/thom-lob100/modern-lab-controls-public/tree/transfer-2026-09-14`
+> **이 브랜치에서 받으세요 — `transfer-2026-09-15`.**
+> 저장소를 그냥 열면 `main` 이 보이는데 거기에는 이 파일들이 없습니다.
+> 주소: `https://github.com/thom-lob100/modern-lab-controls-public/tree/transfer-2026-09-15`
 
-## 지금 받아 갈 파일 — **여섯**
+오늘 전달은 **서로 다른 세 덩어리**입니다. 필요한 것만 가져가시면 되고, 서로 의존하지 않습니다.
+
+## A. 기준정보 CRUD 공통화 (Product · Flow · Oper)
+
+세 화면에 똑같이 반복되던 조회·선택·저장·삭제 수명주기를 공통 베이스 하나로 모았습니다.
+**동작은 그대로**이고, 각 폼에는 서버 계약(키·전문 이름·명령)과 화면별 편집 설정만 남습니다.
+세 폼 합계 1541줄이 800줄로 줄었습니다.
+
+| 파일 | 무엇 |
+|---|---|
+| `Modern.Lab.MasterData/Screens/Shared/MasterDataCrudFormBase.cs` | **새 파일** — 목록 상태(Loading·Ready·ReadyEmpty·Blocked·Failed) · 조회·선택 · 저장·삭제 · 버튼/메뉴 동기화 · Esc · 필수값 검증 |
+| `Modern.Lab.MasterData/Screens/Shared/MasterDataCrudDefinition.cs` | **새 파일** — 화면별 계약(엔터티명 · 키 컬럼 · Action · MethodCommand 넷 · 목록 Table Id · 필수 컬럼) |
+| `Modern.Lab.MasterData/Screens/Shared/MasterDataCrudView.cs` | **새 파일** — Designer 가 만든 컨트롤 참조 묶음 |
+| `Modern.Lab.MasterData/Screens/Products/ProductForm.cs` | Product 계약 + 전용 편집기 정의(콤보·토글·멀티라인·필수·읽기전용)만 남김 (577줄 → 83줄) |
+| `Modern.Lab.MasterData/Screens/Flows/FlowForm.cs` | Flow 계약만 남김 (521줄 → 58줄) |
+| `Modern.Lab.MasterData/Screens/Opers/OperForm.cs` | Oper 계약만 남김 (521줄 → 58줄) |
+
+**적용할 때 볼 것**
+
+- `.Designer.cs` 는 **바꾸지 않았습니다.** 이벤트 배선(`OnFormLoad` · `OnSearchClick` · `OnNewClick` ·
+  `OnSaveClick` · `OnDeleteClick` · `OnActionMenuOpening` · 선택 변경)이 베이스의 `protected` 멤버를
+  그대로 가리키므로 연결이 끊기지 않습니다.
+- 새 파일 셋을 **프로젝트에 등록**해야 합니다(클래식 `.csproj` 면 `Compile` 세 줄).
+- 네임스페이스는 홈 기준(`Modern.Lab.MasterData`)입니다. 회사 네임스페이스가 다르면 그 줄만 맞춰 주세요.
+- 세 타입은 `public` 이고 `InitializeCrud` 는 `protected` 입니다 — 공통 베이스를 **상위 공통 어셈블리**에
+  두고 업무 폼을 다른 어셈블리에서 파생해도 컴파일이 막히지 않습니다. 2026-09-07 에 표 응답 계약
+  코어에서 같은 자리가 막혔던 적이 있어 이번에는 처음부터 열어 두었습니다.
+- 전문 이름·키·명령 문자열은 **글자까지 그대로**입니다(`ProductAction` · `SelectProducts` ·
+  `InsertProduct` · `UpdateProduct` · `DeleteProduct` · `PROD_ID`, Flow·Oper 도 같은 규칙).
+
+## B. 정보 카드 필드가 상태 배지가 된다 (컨트롤 라이브러리)
+
+`ModernFieldList`(모든 폼의 info 카드)의 필드에 `IsBadge` 를 켜면 값 자리에 상태 배지가 놓입니다.
+**배경색은 값에서 유도**되므로 같은 값이면 **그리드 배지와 색이 맞습니다** — 표에서 초록인 `PROC` 가
+카드에서도 초록입니다.
+
+```csharp
+FieldDefinitions.Of(lots)
+        .Badge("MES_PROC_STAT_CD")
+        .BadgeAccent("MES_PROC_STAT_CD", "HOLD")      // 이 값만 진한 오류 채움 + 테두리
+        .BadgeSpin("MES_PROC_STAT_CD", "PROC;SENDING") // 이 값이면 테두리가 돈다
+        .Apply(this.fieldInfo);
+```
+
+| 파일 | 무엇 |
+|---|---|
+| `Modern.Lab.Commons/WinForms/Display/ModernFieldList.cs` | 배지 필드마다 기존 `ModernStatusBadge` 를 자식으로 얹는다(배지 시각을 새로 그리지 않음) |
+| `Modern.Lab.Commons/WinForms/Display/ModernFieldDefinition.cs` | `IsBadge` · `BadgeAccentValues` · `BadgeSpinValues` |
+| `Modern.Lab.Commons/WinForms/Display/FieldDefinitions.cs` | `Badge(...)` · `BadgeAccent(member, values)` · `BadgeSpin(member, values)` |
+
+**이 셋은 `Modern.Lab.Commons` 입니다 — 평소처럼 DLL 을 교체하셔도 되고**, 소스로 직접 넣으실 수 있게
+같이 올려 두었습니다. 둘 중 하나만 하세요.
+
+- 해시 자동색은 값을 **구분**해 줄 뿐 **의미**를 주지 않습니다 — 실패가 초록으로 나올 수 있으니
+  눈에 띄어야 하는 값은 `BadgeAccent` 로 빼세요.
+- 값이 비면 배지 대신 기존처럼 "-" 를 그립니다.
+- **배지 필드가 없는 화면은 비용이 0입니다** — 이미 적용하신 폼 소스는 한 줄도 바뀌지 않습니다.
+
+## C. 그 앞 전달분 (Equipment/Lots) — 아래 절 그대로
+
+`transfer-2026-09-14` 에서 받아 가시던 여섯 파일은 이 브랜치에도 그대로 있습니다. 아직 안 받으셨으면
+아래 「받아 갈 파일 — 여섯」 절을 보세요.
+
+---
+
+## 받아 갈 파일 — 여섯 (2026-09-14 전달분)
 
 갱신 9 를 적은 뒤 세 회차가 더 올라갔습니다. 아래가 지금 이 브랜치에 있는 전부입니다. 갱신 9 까지만
 받아 두셨다면 **`Hosting/` 두 개가 새로 늘었고**, `EquipmentLotForm.cs` 와 `TableMerge.cs` 와
