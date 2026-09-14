@@ -398,6 +398,7 @@ namespace Modern.Lab.Samples
             this.fieldRequest.Name = "fieldRequest";
             this.fieldRequest.Size = new System.Drawing.Size(484, 80);
             this.fieldRequest.TabIndex = 0;
+            this.panelRequestRemark.AutoScroll = true;
             this.panelRequestRemark.Controls.Add(this.lblRequestRemark);
             this.panelRequestRemark.Controls.Add(this.lblRequestRemarkCaption);
             this.panelRequestRemark.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -414,7 +415,8 @@ namespace Modern.Lab.Samples
             this.lblRequestRemarkCaption.Size = new System.Drawing.Size(464, 18);
             this.lblRequestRemarkCaption.TabIndex = 0;
             this.lblRequestRemarkCaption.Text = "Remarks";
-            this.lblRequestRemark.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblRequestRemark.AutoSize = true;
+            this.lblRequestRemark.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblRequestRemark.Location = new System.Drawing.Point(10, 22);
             this.lblRequestRemark.Name = "lblRequestRemark";
             this.lblRequestRemark.Size = new System.Drawing.Size(464, 42);

@@ -1,4 +1,63 @@
-# 임시 전달 — Equipment/Lots (2026-09-14, 갱신 7)
+# 임시 전달 — Equipment/Lots (2026-09-14, 갱신 8)
+
+> **이 브랜치에서 받으세요 — `transfer-2026-09-14`.**
+> 저장소를 그냥 열면 `main` 이 보이는데 거기에는 이 파일들이 없습니다(2026-09-14 에 실제로 헛걸음이
+> 있었습니다). 주소: `https://github.com/thom-lob100/modern-lab-controls-public/tree/transfer-2026-09-14`
+
+## 오늘 받아 갈 파일 (여섯)
+
+| 파일 | 이번에 바뀐 것 |
+|---|---|
+| `Management/EquipmentLotForm.cs` | 의뢰서 카드 깜빡임 가드 · Remarks 두 줄 · 작업 모드 더블클릭 가드 |
+| `Management/EquipmentLotForm.Designer.cs` | Remarks 영역 스크롤(`AutoScroll`) · 본문 라벨 `AutoSize` |
+| `Management/Services/TableMerge.cs` | **이번에 처음 나갑니다** — 키 없는 표도 제자리에서 갱신(시편 표 깜빡임) |
+| `Management/Services/EquipmentLotPresenter.cs` | 통신 모드를 Lot 의 장비에서 읽음 · Start/End 장비 일치 조건 제거 |
+| `Management/Services/JobDecision.cs` | 결정이 장비 목록을 들고 다님(`EquipmentList`) |
+| `Management/Contracts/EquipmentLotContracts.cs` | 게이트가 보는 상태 컬럼 목록 |
+
+받은 파일이 맞는지 확인: `EquipmentLotForm.cs` 에 **`sameRequest` 가 2 번**, `RequestRemarkHeight` 가 있고
+값이 **64** 면 오늘 것입니다.
+
+`ServerFields.cs` 는 이번 전달에 넣지 않았습니다. 홈에서는 상위 Common 으로 옮겼지만 회사 적용은
+따로 정하기로 했으므로, 전달본에서는 그 이동에 딸린 `using` 한 줄을 빼 두었습니다.
+
+## 0. Remarks 는 두 줄, 넘치면 그 안에서 스크롤합니다
+
+시편 목록이 너무 짧다는 지적에 따라 헤더가 차지하던 자리를 표에 돌려줬습니다.
+
+- Remarks 영역을 네 줄(104)에서 **두 줄(64)** 로 줄였습니다.
+- 두 줄보다 긴 글은 **잘리지 않고 그 영역 안에서 세로로 스크롤**합니다. 짧은 글에서는 스크롤바가
+  보이지 않습니다.
+- 헤더 상한이 184 에서 **144** 로 내려가고 시편 표가 그만큼 커집니다 — 홈 기준 316px, 같은 창에서
+  표에 두 줄이 더 보입니다.
+
+디자이너에서 바뀐 것은 두 줄입니다.
+
+```csharp
+this.panelRequestRemark.AutoScroll = true;          // 넘치면 스크롤
+this.lblRequestRemark.AutoSize = true;              // 내용만큼 자란다
+this.lblRequestRemark.Dock = DockStyle.Top;         // Fill 이면 갇혀서 넘침을 모른다
+```
+
+## 0. 시편 표가 자동 갱신마다 깜빡이던 진짜 원인 — `Services/TableMerge.cs`
+
+의뢰서 카드를 비우지 않게 고친 뒤에도 **시편 표의 행이 사라졌다 다시 나타나는** 잔깜빡임이 남았습니다.
+원인은 한 단계 아래였습니다. `TableMerge.Apply` 가 **행 키가 있는 표만** 값을 비교해 고치고, 키가 없는
+표(시편 표가 그렇습니다)는 `Rows.Clear()` 뒤 전부 다시 넣고 있었습니다. 표 객체는 그대로여서 "제자리
+갱신" 으로 보였지만, 행이 전멸했다 부활하므로 그리드는 목록이 통째로 바뀐 것으로 받아 다시 그립니다.
+
+이제 키 없는 표도 **자리 순서로 짝지어** 값이 달라진 칸만 쓰고, 남거나 모자라는 만큼만 지우고 더합니다.
+키 있는 표가 쓰던 `UpdateRow` 를 그대로 쓰므로 새 규칙이 아닙니다.
+
+홈에서 갱신 한 번을 통과시키며 잰 값입니다.
+
+```
+고치기 전   마스터행 유지 True · 시편행 유지 False · 컬럼 유지 False
+고친 뒤     마스터행 유지 True · 시편행 유지 True  · 컬럼 유지 True
+```
+
+파일 하나를 통째로 받으시면 되고, 회사 사본의 `UpdateRow` 인자가 셋이면 마지막 인자만 빼고 부르면
+됩니다.
 
 ## 0. Job 버튼은 결정 장비가 아니라 **고른 Lot**을 봅니다
 

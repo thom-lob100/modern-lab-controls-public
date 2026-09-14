@@ -1464,7 +1464,7 @@ namespace Modern.Lab.Samples
 
         private const int RequestFieldMaxColumns = 4;
 
-        private const int RequestRemarkHeight = 104;
+        private const int RequestRemarkHeight = 64;
 
         private const int RequestDetailMinHeight = 160;
 
