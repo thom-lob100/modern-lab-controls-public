@@ -80,6 +80,10 @@ namespace Modern.Lab.Samples
         private readonly JobDecision decision = new JobDecision();
         private readonly System.Windows.Forms.Timer refreshTimer = new System.Windows.Forms.Timer();
 
+        private readonly System.Windows.Forms.Timer targetFlashTimer = new System.Windows.Forms.Timer();
+
+        private System.Drawing.Color targetRestColor = System.Drawing.Color.Empty;
+
         private int refreshSerial;
         private int dependentSerial;
 
@@ -122,6 +126,8 @@ namespace Modern.Lab.Samples
             this.menuLot.Renderer = new Modern.Lab.WinForms.Rendering.ModernMenuRenderer();
             this.menuLot.ShowItemToolTips = true;
 
+            this.targetFlashTimer.Interval = 1500;
+            this.targetFlashTimer.Tick += this.OnTargetFlashElapsed;
             this.refreshTimer.Interval = 1000;
             this.refreshTimer.Tick += this.OnRefreshTick;
             this.Disposed += this.OnFormDisposed;
@@ -715,9 +721,7 @@ namespace Modern.Lab.Samples
                 this.gridBinding = false;
             }
 
-            this.eqpCard.TitleRightText = table == null
-                    ? string.Empty
-                    : table.Rows.Count.ToString("N0") + " equipment";
+            this.RefreshDecisionTitles();
             this.RefreshContractNotice();
 
             string previousEqpId = this.decision.EqpId;
@@ -1237,7 +1241,7 @@ namespace Modern.Lab.Samples
 
             this.RefreshContractNotice();
 
-            this.lotCard.TitleRightText = this.lotData == null ? string.Empty : this.lotData.Rows.Count.ToString("N0") + " lots";
+            this.RefreshDecisionTitles();
 
             this.decision.Lot = this.decision.Locked
                     ? EquipmentLotPresenter.FindById(this.lotData, ServerFields.Lot.LotId, previousLotId)
@@ -1733,6 +1737,31 @@ namespace Modern.Lab.Samples
             this.RefreshActionStates();
         }
 
+        private void RefreshDecisionTitles()
+        {
+            this.eqpCard.TitleRightText = DecidedTitle(this.decision.EqpId, this.equipmentData, "equipment");
+            this.lotCard.TitleRightText = DecidedTitle(this.decision.LotId, this.lotData, "lots");
+            this.durableCard.TitleRightText = DecidedTitle(this.decision.DurableId, this.durableData, "durables");
+
+            string ports = this.decision.InPortNm.Length == 0 && this.decision.OutPortNm.Length == 0
+                    ? string.Empty
+                    : this.decision.InPortNm + " → " + this.decision.OutPortNm;
+
+            this.portCard.TitleRightText = DecidedTitle(ports, this.portData, "ports");
+        }
+
+        private static string DecidedTitle(string decided, DataTable table, string noun)
+        {
+            string count = table == null ? string.Empty : table.Rows.Count.ToString("N0") + " " + noun;
+
+            if (decided == null || decided.Length == 0)
+            {
+                return count;
+            }
+
+            return count.Length == 0 ? "Decided " + decided : "Decided " + decided + "  ·  " + count;
+        }
+
         private void RefreshDecisionPanel()
         {
             DataRow lot = this.decision.Lot;
@@ -1790,7 +1819,38 @@ namespace Modern.Lab.Samples
             this.btnJobPrep.Enabled = this.Allows(gate, EquipmentLotPresenter.ActionJobPrep);
             this.btnJobStart.Enabled = this.Allows(gate, EquipmentLotPresenter.ActionJobStart);
             this.btnJobEnd.Enabled = this.Allows(gate, EquipmentLotPresenter.ActionJobEnd);
-            this.lblTarget.Text = EquipmentLotPresenter.StatusLineText(this.decision, gate);
+            string targetText = EquipmentLotPresenter.StatusLineText(this.decision, gate);
+
+            if (!string.Equals(this.lblTarget.Text, targetText, StringComparison.Ordinal))
+            {
+                this.lblTarget.Text = targetText;
+                this.FlashTarget();
+            }
+
+            this.RefreshDecisionTitles();
+        }
+
+        private void FlashTarget()
+        {
+            if (this.targetRestColor.IsEmpty)
+            {
+                this.targetRestColor = this.lblTarget.ForeColor;
+            }
+
+            this.lblTarget.ForeColor = Modern.Lab.Theming.ModernTokenColors.Get(
+                    "Brush.Accent", Modern.Lab.Theming.ModernTheme.Accent);
+            this.targetFlashTimer.Stop();
+            this.targetFlashTimer.Start();
+        }
+
+        private void OnTargetFlashElapsed(object sender, EventArgs e)
+        {
+            this.targetFlashTimer.Stop();
+
+            if (!this.targetRestColor.IsEmpty)
+            {
+                this.lblTarget.ForeColor = this.targetRestColor;
+            }
         }
 
         private ActionGate BuildGate()

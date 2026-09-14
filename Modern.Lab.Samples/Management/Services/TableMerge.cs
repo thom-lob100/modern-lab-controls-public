@@ -40,7 +40,7 @@ namespace Modern.Lab.Samples.Services
                 }
             }
 
-            if (!Keyed(target, keyColumn) || !Keyed(source, keyColumn))
+            if (string.IsNullOrEmpty(keyColumn))
             {
                 int paired = Math.Min(target.Rows.Count, source.Rows.Count);
 
@@ -61,6 +61,21 @@ namespace Modern.Lab.Samples.Services
                     CopyRow(added, source.Rows[index], source);
                     target.Rows.Add(added);
                     changed = true;
+                }
+
+                return changed;
+            }
+
+            if (!Keyed(target, keyColumn) || !Keyed(source, keyColumn))
+            {
+                changed = changed || target.Rows.Count > 0 || source.Rows.Count > 0;
+                target.Rows.Clear();
+
+                foreach (DataRow incoming in source.Rows)
+                {
+                    DataRow added = target.NewRow();
+                    CopyRow(added, incoming, source);
+                    target.Rows.Add(added);
                 }
 
                 return changed;
