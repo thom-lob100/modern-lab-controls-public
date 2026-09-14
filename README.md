@@ -1,41 +1,64 @@
-# 임시 전달 — Equipment/Lots (2026-09-14, 갱신 9)
+# 임시 전달 — Equipment/Lots (2026-09-15, 갱신 10)
 
 > **이 브랜치에서 받으세요 — `transfer-2026-09-14`.**
 > 저장소를 그냥 열면 `main` 이 보이는데 거기에는 이 파일들이 없습니다(2026-09-14 에 실제로 헛걸음이
 > 있었습니다). 주소: `https://github.com/thom-lob100/modern-lab-controls-public/tree/transfer-2026-09-14`
 
-## 지금 받아 갈 파일 — **둘뿐입니다** (마지막 갱신에서 바뀐 것)
+## 지금 받아 갈 파일 — **여섯**
+
+갱신 9 를 적은 뒤 세 회차가 더 올라갔습니다. 아래가 지금 이 브랜치에 있는 전부입니다. 갱신 9 까지만
+받아 두셨다면 **`Hosting/` 두 개가 새로 늘었고**, `EquipmentLotForm.cs` 와 `TableMerge.cs` 와
+`EquipmentLotPresenter.cs` 는 그때 받으신 것보다 더 바뀌었습니다.
 
 | 파일 | 바뀐 것 |
 |---|---|
-| `Management/EquipmentLotForm.cs` | **Lot 클릭 시 카드를 비우지 않고 로딩 표시로 덮는다** · Remarks 두 줄 |
-| `Management/EquipmentLotForm.Designer.cs` | **의뢰서 카드 로딩 표시(`requestBusy`) 추가** · Remarks 영역 스크롤 |
+| `Management/EquipmentLotForm.cs` | Lot 클릭 시 카드를 비우지 않고 로딩 표시로 덮는다 · Remarks 두 줄 · 결정 값을 카드 제목에 적고 대상 줄이 반짝인다 |
+| `Management/EquipmentLotForm.Designer.cs` | 의뢰서 카드 로딩 표시(`requestBusy`) 추가 · Remarks 영역 스크롤 |
+| `Management/Services/TableMerge.cs` | 키 없는 표도 제자리에서 갱신한다(시편 표 깜빡임) · 자리 순서 갱신을 키를 선언하지 않은 표로만 좁혔다 |
+| `Management/Services/EquipmentLotPresenter.cs` | 통신 모드를 Lot 의 장비에서 읽는다 · Start/End 의 장비 일치 조건 제거 · 결정 지속재가 작업의 타깃을 따른다 |
+| `Hosting/ModernFormBase.cs` | 마지막 알림이 화면 하단에 한 줄로 남는다 |
+| `Hosting/ModernFormBase.Messaging.cs` | 사용자가 누른 것을 거절할 때 토스트가 아니라 모달로 알린다 |
 
-### 그 앞 갱신에서 받아 가신 것 (다시 받을 필요 없습니다)
+`Hosting/` 두 파일은 **베이스만 바뀌고 화면 소스는 한 줄도 바뀌지 않습니다.**
 
-| 파일 | 무엇 |
-|---|---|
-| `Management/Services/TableMerge.cs` | 키 없는 표도 제자리에서 갱신(시편 표 깜빡임) |
-
-### 이미 받아 가신 것 (아침 전달분 — 다시 받을 필요 없습니다)
-
-같은 브랜치에 그대로 있지만 **마지막 갱신에서 한 줄도 바뀌지 않았습니다.**
+### 이미 받아 가신 것 (마지막 세 회차에서 한 줄도 바뀌지 않았습니다)
 
 | 파일 | 무엇 |
 |---|---|
-| `Management/Services/EquipmentLotPresenter.cs` | 통신 모드를 Lot 의 장비에서 읽음 · Start/End 장비 일치 조건 제거 |
-| `Management/Services/JobDecision.cs` | 결정이 장비 목록을 들고 다님(`EquipmentList`) |
+| `Management/Services/JobDecision.cs` | 결정이 장비 목록을 들고 다닌다(`EquipmentList`) |
 | `Management/Contracts/EquipmentLotContracts.cs` | 게이트가 보는 상태 컬럼 목록 |
-| `Management/Contracts/ServerFields.cs` | 장비 행의 `GOAL_PORT_NM` (그 앞 전달분) |
-
-`EquipmentLotForm.cs` 는 아침 것에서 **Remarks 높이 한 줄만** 더 바뀌었습니다. 아침 것을 이미 넣으셨다면
-`RequestRemarkHeight` 값을 `104` 에서 `64` 로 고치고 Designer 두 줄만 넣어도 같은 결과입니다.
+| `Management/Contracts/ServerFields.cs` | 장비 행의 `GOAL_PORT_NM` |
 
 받은 파일이 맞는지 확인: `EquipmentLotForm.cs` 에 **`sameRequest` 가 2 번**, `RequestRemarkHeight` 가 있고
-값이 **64** 면 오늘 것입니다.
+값이 **64** 면 갱신 9 이후 것입니다.
 
 `ServerFields.cs` 는 이번 전달에 넣지 않았습니다. 홈에서는 상위 Common 으로 옮겼지만 회사 적용은
 따로 정하기로 했으므로, 전달본에서는 그 이동에 딸린 `using` 한 줄을 빼 두었습니다.
+
+## 0. 거절은 토스트가 아니라 모달입니다 — `Hosting/ModernFormBase.Messaging.cs`
+
+사용자가 누른 것을 거절해 놓고 2.5 초짜리 토스트로 알리고 있었습니다. 눈을 돌리면 못 보고, 그러면 왜
+아무 일도 일어나지 않았는지 알 길이 없습니다. 거절을 내는 두 자리(쓰기 시작 거절 · 처리 중 창 닫기
+거절)의 종류를 `Info` 에서 `Warning` 으로 바꿨습니다. `ShowToast` 진입점이 `Warning` 을 모달로 돌리므로
+**호출부는 그대로**입니다.
+
+## 0. 마지막 알림이 하단에 한 줄로 남습니다 — `Hosting/ModernFormBase.cs`
+
+토스트는 2.5 초면 사라져서 눈을 돌리면 무슨 일이 있었는지 알 수 없습니다. 베이스가 하단에 한 줄짜리
+라벨을 만들어 붙이고 마지막 알림을 시각과 함께 남깁니다 — 실패와 거절은 빨강, 그 밖은 평범한 글자색
+입니다. 토스트로 가든 모달로 가든 그 줄에는 남습니다. 라벨은 첫 알림 때 만들어 `Dock=Bottom` 으로
+붙으므로 **화면 소스는 손대지 않습니다.**
+
+## 0. 결정 지속재는 작업의 타깃을 따릅니다 — `Services/EquipmentLotPresenter.cs`
+
+작업이 걸린 Lot 이 결정이면 지속재도 그 작업의 타깃(`GOAL_CARRIER_ID`)입니다. 지금까지는 목록에서 고른
+값이나 1순위가 그대로 남아, 카드 제목과 판정이 그 작업과 무관한 지속재를 가리켰습니다. 소스
+(`CARRIER_ID`)와 타깃(`GOAL_CARRIER_ID`)을 가르는 규칙이 요약 줄에만 있고 결정에는 없던 것이 원인입니다.
+
+## 0. 결정 값을 카드 제목에 적고 대상 줄이 반짝입니다 — `EquipmentLotForm.cs` · `Services/TableMerge.cs`
+
+목록에서 고른 것과 결정된 것을 눈으로 가릅니다. 같은 회차에서 `TableMerge` 는 자리 순서 갱신을 **키를
+선언하지 않은 표로만** 좁혔습니다.
 
 ## 0. Lot 을 클릭할 때도 의뢰서 카드가 깜빡이지 않습니다
 
