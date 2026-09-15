@@ -1004,7 +1004,8 @@ namespace Modern.Lab.Hosting
             string key = channel ?? string.Empty;
 
             System.Threading.Tasks.TaskCompletionSource<LoadOutcome<T>> completion =
-                    new System.Threading.Tasks.TaskCompletionSource<LoadOutcome<T>>();
+                    new System.Threading.Tasks.TaskCompletionSource<LoadOutcome<T>>(
+                            System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
 
             if (fetch == null)
             {
