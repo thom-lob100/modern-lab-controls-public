@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5D1E2F3A-4B5C-4D6E-8F90-A1B2C3D4E5F6}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Modern.Lab</RootNamespace>
+    <AssemblyName>Modern.Lab.MasterData</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <LangVersion>7.3</LangVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="app.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="WindowsFormsIntegration" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="..\SharedVersionInfo.cs">
+      <Link>Properties\SharedVersionInfo.cs</Link>
+    </Compile>
+    <Compile Include="Controls\ModernPropertyGrid.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Screens\Shared\MasterDataCrudDefinition.cs" />
+    <Compile Include="Screens\Shared\MasterDataCrudFormBase.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Screens\Shared\MasterDataCrudView.cs" />
+    <Compile Include="Screens\Products\ProductForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Screens\Products\ProductForm.Designer.cs">
+      <DependentUpon>ProductForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Screens\Products\ProductForm.LocalApi.cs">
+      <DependentUpon>ProductForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Screens\MasterDataMenuForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Screens\MasterDataMenuForm.Designer.cs">
+      <DependentUpon>MasterDataMenuForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Screens\Flows\FlowForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Screens\Flows\FlowForm.Designer.cs">
+      <DependentUpon>FlowForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Screens\Flows\FlowForm.LocalApi.cs">
+      <DependentUpon>FlowForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Screens\Opers\OperForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Screens\Opers\OperForm.Designer.cs">
+      <DependentUpon>OperForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Screens\Opers\OperForm.LocalApi.cs">
+      <DependentUpon>OperForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Screens\PfoNodes\PfoNodeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Screens\PfoNodes\PfoNodeForm.Designer.cs">
+      <DependentUpon>PfoNodeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Screens\PfoNodes\PfoNodeForm.LocalApi.cs">
+      <DependentUpon>PfoNodeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Services\ProductLocalServer.cs" />
+    <Compile Include="Screens\AreaBays\AreaBayForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Screens\AreaBays\AreaBayForm.Designer.cs">
+      <DependentUpon>AreaBayForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Screens\AreaBays\AreaBayForm.LocalApi.cs">
+      <DependentUpon>AreaBayForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Services\AreaBayLocalServer.cs" />
+    <Compile Include="Diagnostics\AreaBayUiSelfTest.cs" />
+    <Compile Include="Services\MasterDataLocalReply.cs" />
+    <Compile Include="Services\FlowLocalServer.cs" />
+    <Compile Include="Services\OperLocalServer.cs" />
+    <Compile Include="Services\PfoNodeLocalServer.cs" />
+    <Compile Include="Diagnostics\ProductUiSelfTest.cs" />
+    <Compile Include="Diagnostics\FlowOperUiSelfTest.cs" />
+    <Compile Include="Diagnostics\PfoNodeUiSelfTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Modern.Lab.Commons\Modern.Lab.Commons.csproj">
+      <Project>{3C9A1D2E-5B4F-4A6C-9D7E-0F1A2B3C4D5E}</Project>
+      <Name>Modern.Lab.Commons</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Modern.Lab.Hosting\Modern.Lab.Hosting.csproj">
+      <Project>{9B8C7D6E-5F40-4A31-B2C3-D4E5F60718A9}</Project>
+      <Name>Modern.Lab.Hosting</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
