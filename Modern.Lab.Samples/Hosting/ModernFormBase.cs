@@ -1045,23 +1045,14 @@ namespace Modern.Lab.Hosting
                         outcome = new LoadOutcome<T>(false, result, failure ?? settleFailure);
                     }
 
-                    try
-                    {
-                        completion.TrySetResult(outcome);
-                    }
-                    finally
-                    {
-                        if (!this.TryPostToUi(new MethodInvoker(this.EndQuery)))
-                        {
-                            this.EndQuery();
-                        }
-                    }
+                    this.EndQuery();
+                    completion.TrySetResult(outcome);
                 }));
 
                 if (!posted)
                 {
-                    completion.TrySetResult(new LoadOutcome<T>(false, result, failure));
                     this.EndQuery();
+                    completion.TrySetResult(new LoadOutcome<T>(false, result, failure));
                 }
             });
 
