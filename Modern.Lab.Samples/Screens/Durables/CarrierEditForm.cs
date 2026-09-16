@@ -1869,7 +1869,7 @@ namespace Modern.Lab.Samples
         private DataTable GetCarriers(string type)
         {
             DataTable received = this.RequestFields(
-                    "/api/durable/durables", "type", type ?? string.Empty).Table;
+                    "GetDurableList", "DURABLE_TYPE", type ?? string.Empty).Table;
 
             return this.SourceLocked ? SelectSourceAndTargets(received) : received;
         }
@@ -1910,9 +1910,9 @@ namespace Modern.Lab.Samples
         private DataTable GetDurableWafers(string durableId)
         {
             return this.RequestFields(
-                    "/api/durable/slots",
-                    "durableId", durableId ?? string.Empty,
-                    "subType", string.Empty).Table;
+                    "GetDurableSlotList",
+                    "DURABLE_ID", durableId ?? string.Empty,
+                    "SUB_TYPE", string.Empty).Table;
         }
 
         private DataActionResult MoveDurableWafers(
@@ -1921,35 +1921,35 @@ namespace Modern.Lab.Samples
             if (string.Equals(type, ServerFields.Carrier.Tray, StringComparison.Ordinal))
             {
                 return this.RequestFields(
-                        "/api/durable/edit",
-                        "sourceId", sourceId ?? string.Empty,
-                        "targetId", targetId ?? string.Empty,
-                        "chipIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Chip),
-                        "stubSlotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Chip),
-                        "lamellaIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Lamella),
-                        "lccSlotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Lamella),
-                        "description", description);
+                        "EditDurable",
+                        "SOURCE_ID", sourceId ?? string.Empty,
+                        "TARGET_ID", targetId ?? string.Empty,
+                        "CHIP_IDS", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Chip),
+                        "STUB_SLOT_NOS", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Chip),
+                        "LAMELLA_IDS", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Lamella),
+                        "LCC_SLOT_NOS", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Lamella),
+                        "DESCRIPTION", description);
             }
 
             return this.RequestFields(
-                    "/api/durable/edit",
-                    "sourceId", sourceId ?? string.Empty,
-                    "targetId", targetId ?? string.Empty,
-                    "waferIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Wafer),
-                    "slotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Wafer),
-                    "description", description);
+                    "EditDurable",
+                    "SOURCE_ID", sourceId ?? string.Empty,
+                    "TARGET_ID", targetId ?? string.Empty,
+                    "WAFER_IDS", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Wafer),
+                    "SLOT_NOS", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Wafer),
+                    "DESCRIPTION", description);
         }
 
         private DataActionResult ExchangeDurableWafers(
                 string sourceId, string targetId, DataTable wafers, string description)
         {
             return this.RequestFields(
-                    "/api/durable/exchange",
-                    "sourceId", sourceId ?? string.Empty,
-                    "targetId", targetId ?? string.Empty,
-                    "waferIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Wafer),
-                    "slotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Wafer),
-                    "description", description);
+                    "ExchangeDurable",
+                    "SOURCE_ID", sourceId ?? string.Empty,
+                    "TARGET_ID", targetId ?? string.Empty,
+                    "WAFER_IDS", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Wafer),
+                    "SLOT_NOS", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Wafer),
+                    "DESCRIPTION", description);
         }
 
         private static string UnitIds(DataTable wafers, string kind)
@@ -2016,19 +2016,19 @@ namespace Modern.Lab.Samples
             if (string.Equals(type, ServerFields.Carrier.Tray, StringComparison.Ordinal))
             {
                 return this.RequestFields(
-                        "/api/durable/scrap",
-                        "durableId", carrierId ?? string.Empty,
-                        "chipIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Chip),
-                        "stubSlotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Chip),
-                        "lamellaIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Lamella),
-                        "lccSlotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Lamella));
+                        "ScrapDurable",
+                        "DURABLE_ID", carrierId ?? string.Empty,
+                        "CHIP_IDS", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Chip),
+                        "STUB_SLOT_NOS", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Chip),
+                        "LAMELLA_IDS", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Lamella),
+                        "LCC_SLOT_NOS", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Lamella));
             }
 
             return this.RequestFields(
-                    "/api/durable/scrap",
-                    "durableId", carrierId ?? string.Empty,
-                    "waferIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Wafer),
-                    "slotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Wafer));
+                    "ScrapDurable",
+                    "DURABLE_ID", carrierId ?? string.Empty,
+                    "WAFER_IDS", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Wafer),
+                    "SLOT_NOS", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Wafer));
         }
 
     }
