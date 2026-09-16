@@ -33,6 +33,10 @@ namespace Modern.Lab.Samples
 
         private DataTable stagedWafers;
 
+        private string loadedSourceId = string.Empty;
+
+        private string loadedTargetId = string.Empty;
+
         private static string LotColor(string lotId)
         {
             return string.IsNullOrEmpty(lotId)
@@ -217,12 +221,26 @@ namespace Modern.Lab.Samples
                 return;
             }
 
-            this.ReloadCarrierLists(this.cboSource.SelectedValue as string, null);
+            string selected = this.cboSource.SelectedValue as string ?? string.Empty;
+
+            if (string.Equals(selected, this.loadedSourceId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            this.ReloadCarrierLists(selected, null);
         }
 
         private void OnTargetChanged(object sender, EventArgs e)
         {
             if (this.loadingLists)
+            {
+                return;
+            }
+
+            string selected = this.cboTarget.SelectedValue as string ?? string.Empty;
+
+            if (string.Equals(selected, this.loadedTargetId, StringComparison.Ordinal))
             {
                 return;
             }
@@ -338,7 +356,7 @@ namespace Modern.Lab.Samples
                 DataTable sources = carriers.Clone();
                 foreach (DataRow row in carriers.Rows)
                 {
-                    if (CarrierEditPresenter.IsValidCarrier(row))
+                    if (CarrierEditPresenter.IsSourceCandidate(row))
                     {
                         sources.ImportRow(row);
                     }
@@ -469,6 +487,7 @@ namespace Modern.Lab.Samples
             string type = this.GetSelectedType();
             string carrierId = this.cboSource.SelectedValue as string ?? string.Empty;
 
+            this.loadedSourceId = carrierId;
             this.ClearSourceMapState();
             this.BeginSourceMapContractLoad(type, carrierId);
 
@@ -518,6 +537,7 @@ namespace Modern.Lab.Samples
             string type = this.GetSelectedType();
             string carrierId = this.cboTarget.SelectedValue as string ?? string.Empty;
 
+            this.loadedTargetId = carrierId;
             this.ClearTargetMapState();
             this.BeginTargetMapContractLoad(type, carrierId);
 

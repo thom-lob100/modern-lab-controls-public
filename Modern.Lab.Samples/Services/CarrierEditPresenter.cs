@@ -59,6 +59,13 @@ namespace Modern.Lab.Samples.Services
             return count;
         }
 
+        internal static bool IsSourceCandidate(DataRow row)
+        {
+            return IsValidCarrier(row)
+                    && TableHelper.ParseInt(
+                            TableHelper.CellText(row, ServerFields.Durable.UseNumcnt)) > 0;
+        }
+
         internal static bool IsValidCarrier(DataRow row)
         {
             if (row == null)
