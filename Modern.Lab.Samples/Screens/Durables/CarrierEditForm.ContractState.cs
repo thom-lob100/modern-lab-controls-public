@@ -11,7 +11,18 @@ namespace Modern.Lab.Samples
 {
     public partial class CarrierEditForm
     {
-        private static readonly ResponseContractSet Contracts = CarrierEditContracts.Build();
+        private static readonly ResponseContractSet FoupContracts =
+                CarrierEditContracts.Build(ServerFields.Carrier.Foup);
+
+        private static readonly ResponseContractSet TrayContracts =
+                CarrierEditContracts.Build(ServerFields.Carrier.Tray);
+
+        private static ResponseContractSet ContractsFor(string type)
+        {
+            return string.Equals(type, ServerFields.Carrier.Tray, StringComparison.Ordinal)
+                    ? TrayContracts
+                    : FoupContracts;
+        }
 
         private TableResponse carrierCurrent;
         private TableResponse sourceMapCurrent;
@@ -75,16 +86,17 @@ namespace Modern.Lab.Samples
 
         private DataTable BindCarrierResponse(DataTable incoming, string type)
         {
+            ResponseContractSet contracts = ContractsFor(type);
             this.carrierCurrent = TableResponse.Read(
                     ResponseKind.Data,
                     incoming ?? new DataTable(),
-                    Contracts.Aliases,
-                    Contracts.TableFor(CarrierEditContracts.CarrierTable));
+                    contracts.Aliases,
+                    contracts.TableFor(CarrierEditContracts.CarrierTable));
             this.carrierListType = type ?? string.Empty;
             this.RefreshContractNotice();
 
             return this.carrierCurrent.State == TableResponseState.MissingRequired
-                    ? DeclaredEmpty(CarrierEditContracts.CarrierTable)
+                    ? DeclaredEmpty(CarrierEditContracts.CarrierTable, type)
                     : this.carrierCurrent.Table;
         }
 
@@ -97,34 +109,21 @@ namespace Modern.Lab.Samples
         {
             bool schemaWasAbsent = incoming == null || incoming.Columns.Count == 0;
             DataTable prepared = CarrierEditPresenter.PrepareMap(incoming);
-            TableResponse received = null;
 
-            if (prepared.Rows.Count > 0 || !schemaWasAbsent)
+            if (prepared.Rows.Count == 0)
             {
-                received = TableResponse.Read(
-                        ResponseKind.Data,
-                        prepared,
-                        Contracts.Aliases,
-                        Contracts.TableFor(tableId));
+                prepared = CarrierEditPresenter.PrepareMap(DeclaredEmpty(tableId, type));
             }
 
-            if (received != null && received.State == TableResponseState.MissingRequired)
+            TableResponse received = TableResponse.Read(
+                    ResponseKind.Data,
+                    prepared,
+                    ContractsFor(type).Aliases,
+                    ContractsFor(type).TableFor(tableId));
+
+            if (received.State == TableResponseState.MissingRequired)
             {
                 this.SetMapCurrent(tableId, received, type, carrierId);
-                this.RefreshContractNotice();
-                return SlotMapWaferTable.CreateEmpty();
-            }
-
-            if (received != null
-                    && received.State == TableResponseState.Empty
-                    && !HasCompleteMapSchema(Contracts.TableFor(tableId), received.Table))
-            {
-                TableResponse missingSchema = TableResponse.Read(
-                        ResponseKind.Data,
-                        prepared,
-                        Contracts.Aliases,
-                        RequiredMapSchemaContract(Contracts.TableFor(tableId)));
-                this.SetMapCurrent(tableId, missingSchema, type, carrierId);
                 this.RefreshContractNotice();
                 return SlotMapWaferTable.CreateEmpty();
             }
@@ -136,8 +135,8 @@ namespace Modern.Lab.Samples
                 TableResponse blocked = TableResponse.Read(
                         ResponseKind.Data,
                         inconsistent,
-                        Contracts.Aliases,
-                        RequiredMapSchemaContract(Contracts.TableFor(tableId)));
+                        ContractsFor(type).Aliases,
+                        RequiredMapSchemaContract(ContractsFor(type).TableFor(tableId)));
                 this.SetMapCurrent(tableId, blocked, type, carrierId);
                 this.RefreshContractNotice();
                 return SlotMapWaferTable.CreateEmpty();
@@ -147,8 +146,8 @@ namespace Modern.Lab.Samples
             TableResponse full = TableResponse.Read(
                     ResponseKind.Data,
                     CarrierEditPresenter.PrepareMap(normalized),
-                    Contracts.Aliases,
-                    Contracts.TableFor(tableId));
+                    ContractsFor(type).Aliases,
+                    ContractsFor(type).TableFor(tableId));
             TableResponse current = received == null || received.State == TableResponseState.Empty
                     ? full
                     : received;
@@ -156,24 +155,6 @@ namespace Modern.Lab.Samples
             this.SetMapCurrent(tableId, current, type, carrierId);
             this.RefreshContractNotice();
             return full.Table;
-        }
-
-        private static bool HasCompleteMapSchema(TableContract contract, DataTable table)
-        {
-            if (contract == null || table == null)
-            {
-                return false;
-            }
-
-            foreach (string column in contract.DeclaredNames)
-            {
-                if (!table.Columns.Contains(column))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         private bool SelectedCarrierIsEmpty(
@@ -232,7 +213,7 @@ namespace Modern.Lab.Samples
 
         private void SetCarrierFailure(string type, Exception failure)
         {
-            this.carrierCurrent = Failure(CarrierEditContracts.CarrierTable, failure);
+            this.carrierCurrent = Failure(CarrierEditContracts.CarrierTable, type, failure);
             this.carrierListType = type ?? string.Empty;
             this.ResetSourceMapContractState();
             this.ResetTargetMapContractState();
@@ -241,7 +222,7 @@ namespace Modern.Lab.Samples
 
         private void SetMapFailure(string tableId, string type, string carrierId, Exception failure)
         {
-            TableResponse current = Failure(tableId, failure);
+            TableResponse current = Failure(tableId, type, failure);
 
             if (tableId == CarrierEditContracts.SourceMapTable)
             {
@@ -332,8 +313,8 @@ namespace Modern.Lab.Samples
 
         private ActionGate BuildActionGate()
         {
-            ActionGate gate = new ActionGate(Contracts);
             string type = this.GetSelectedType();
+            ActionGate gate = new ActionGate(ContractsFor(type));
             string sourceId = this.SourceId();
             string targetId = this.TargetId();
 
@@ -379,31 +360,31 @@ namespace Modern.Lab.Samples
             string text = ContractText.BannerText(
                     new TableResponse[] { this.carrierCurrent, this.sourceMapCurrent, this.targetMapCurrent },
                     new TableResponse[] { null, null, null },
-                    Contracts,
+                    ContractsFor(this.GetSelectedType()),
                     CarrierEditPresenter.ActionKeys,
                     CarrierEditPresenter.ActionLabel,
                     CarrierEditPresenter.ScreenColumns);
             this.SetContractNotice(text);
         }
 
-        private static TableResponse Failure(string tableId, Exception failure)
+        private static TableResponse Failure(string tableId, string type, Exception failure)
         {
             return TableResponse.Read(
                     ResponseKind.Failed,
                     null,
-                    Contracts.Aliases,
-                    Contracts.TableFor(tableId),
+                    ContractsFor(type).Aliases,
+                    ContractsFor(type).TableFor(tableId),
                     string.Empty,
                     failure == null ? "Carrier query failed." : failure.Message);
         }
 
-        private static DataTable DeclaredEmpty(string tableId)
+        private static DataTable DeclaredEmpty(string tableId, string type)
         {
             return TableResponse.Read(
                     ResponseKind.Data,
                     new DataTable(),
-                    Contracts.Aliases,
-                    Contracts.TableFor(tableId)).Table;
+                    ContractsFor(type).Aliases,
+                    ContractsFor(type).TableFor(tableId)).Table;
         }
 
         private static DataRow FindCarrierRow(TableResponse response, string carrierId)
