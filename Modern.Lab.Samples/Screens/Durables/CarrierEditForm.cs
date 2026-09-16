@@ -474,7 +474,7 @@ namespace Modern.Lab.Samples
 
             LoadOutcome<DataTable> outcome = await this.FetchAsync(
                     channelSourceMap,
-                    new Func<DataTable>(delegate { return GetCarrierWafers(type, carrierId); }));
+                    new Func<DataTable>(delegate { return GetDurableWafers(carrierId); }));
 
             if (!outcome.IsCurrent)
             {
@@ -523,7 +523,7 @@ namespace Modern.Lab.Samples
 
             LoadOutcome<DataTable> outcome = await this.FetchAsync(
                     channelTargetMap,
-                    new Func<DataTable>(delegate { return GetCarrierWafers(type, carrierId); }));
+                    new Func<DataTable>(delegate { return GetDurableWafers(carrierId); }));
 
             if (!outcome.IsCurrent)
             {
@@ -1868,25 +1868,10 @@ namespace Modern.Lab.Samples
 
         private DataTable GetCarriers(string type)
         {
-            if (this.SourceLocked)
-            {
-                return this.GetDurableCarriers(type);
-            }
+            DataTable received = this.RequestFields(
+                    "/api/durable/durables", "type", type ?? string.Empty).Table;
 
-            return this.RequestFields("/api/carrier/carriers", "type", type ?? string.Empty).Table;
-        }
-
-
-        private DataTable GetCarrierWafers(string type, string carrierId)
-        {
-            if (this.SourceLocked)
-            {
-                return this.GetDurableWafers(carrierId);
-            }
-
-            return this.RequestFields("/api/carrier/units",
-                    "type", type ?? string.Empty,
-                    "carrierId", carrierId ?? string.Empty).Table;
+            return this.SourceLocked ? SelectSourceAndTargets(received) : received;
         }
 
 
@@ -1898,21 +1883,11 @@ namespace Modern.Lab.Samples
                 return this.ExchangeDurableWafers(fromId, toId, wafers, description);
             }
 
-            if (this.SourceLocked)
-            {
-                return this.MoveDurableWafers(type, fromId, toId, wafers, description);
-            }
-
-            return this.RequestFields("/api/carrier/move",
-                    "type", type, "fromId", fromId, "toId", toId,
-                    "units", WaferList(wafers),
-                    "description", description);
+            return this.MoveDurableWafers(type, fromId, toId, wafers, description);
         }
 
-        private DataTable GetDurableCarriers(string type)
+        private DataTable SelectSourceAndTargets(DataTable received)
         {
-            DataTable received = this.RequestFields(
-                    "/api/durable/durables", "type", type ?? string.Empty).Table;
             DataTable selected = received == null ? new DataTable() : received.Clone();
             DataRow source = this.FindDurable(received, this.initialSourceId);
 
@@ -2038,31 +2013,23 @@ namespace Modern.Lab.Samples
 
         private DataActionResult ScrapWafers(string type, string carrierId, DataTable wafers)
         {
-            return this.RequestFields("/api/carrier/scrap",
-                    "type", type, "carrierId", carrierId,
-                    "units", WaferList(wafers));
-        }
-
-        private static List<Dictionary<string, object>> WaferList(DataTable wafers)
-        {
-            List<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
-
-            if (wafers != null)
+            if (string.Equals(type, ServerFields.Carrier.Tray, StringComparison.Ordinal))
             {
-                foreach (DataRow row in wafers.Rows)
-                {
-                    Dictionary<string, object> wafer = new Dictionary<string, object>();
-                    wafer[ServerFields.Lot.SubProdTyp.Column] =
-                            TableHelper.CellText(row, ServerFields.Lot.SubProdTyp.Column);
-                    wafer[ServerFields.Unit.SlotNo] =
-                            TableHelper.CellText(row, ServerFields.Unit.SlotNo);
-                    wafer[ServerFields.Unit.FingerId] =
-                            TableHelper.CellText(row, ServerFields.Unit.FingerId);
-                    list.Add(wafer);
-                }
+                return this.RequestFields(
+                        "/api/durable/scrap",
+                        "durableId", carrierId ?? string.Empty,
+                        "chipIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Chip),
+                        "stubSlotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Chip),
+                        "lamellaIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Lamella),
+                        "lccSlotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Lamella));
             }
 
-            return list;
+            return this.RequestFields(
+                    "/api/durable/scrap",
+                    "durableId", carrierId ?? string.Empty,
+                    "waferIds", UnitIds(wafers, ServerFields.Lot.SubProdTyp.Wafer),
+                    "slotNos", SlotNos(wafers, ServerFields.Lot.SubProdTyp.Wafer));
         }
+
     }
 }
