@@ -33,6 +33,10 @@ namespace Modern.Lab.Samples
 
         private DataTable stagedWafers;
 
+        private bool carrierListLoading;
+
+        private string loadedType = string.Empty;
+
         private string loadedSourceId = string.Empty;
 
         private string loadedTargetId = string.Empty;
@@ -171,6 +175,11 @@ namespace Modern.Lab.Samples
                 return;
             }
 
+            if (string.Equals(this.GetSelectedType(), this.loadedType, StringComparison.Ordinal))
+            {
+                return;
+            }
+
             this.DiscardCarrierState();
             this.ReloadCarrierLists(null, null);
         }
@@ -270,12 +279,22 @@ namespace Modern.Lab.Samples
                 return;
             }
 
+            if (this.carrierListLoading)
+            {
+                return;
+            }
+
+            this.carrierListLoading = true;
+            this.loadedType = type;
+
             this.DiscardCarrierState();
             this.BeginCarrierListContractLoad(type);
 
             LoadOutcome<DataTable> outcome = await this.FetchAsync(
                     channelCarriers,
                     new Func<DataTable>(delegate { return GetCarriers(type); }));
+
+            this.carrierListLoading = false;
 
             if (!outcome.IsCurrent)
             {
