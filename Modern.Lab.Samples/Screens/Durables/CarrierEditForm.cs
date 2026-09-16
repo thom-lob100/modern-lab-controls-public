@@ -374,6 +374,8 @@ namespace Modern.Lab.Samples
                         ? string.Empty
                         : TableHelper.CellText(selectedSource.Row, ServerFields.Durable.DurableId);
 
+                this.loadedSourceId = sourceId;
+
                 if (this.SourceLocked
                         && !string.Equals(sourceId, this.initialSourceId, StringComparison.Ordinal))
                 {
@@ -393,10 +395,12 @@ namespace Modern.Lab.Samples
                     this.cboTarget.DisplayMember = "LABEL";
                     this.cboTarget.ValueMember = ServerFields.Durable.DurableId;
                     this.cboTarget.DataSource = targets;
+                    this.loadedTargetId = this.cboTarget.SelectedValue as string ?? string.Empty;
 
                     if (!string.IsNullOrEmpty(keepTargetId))
                     {
                         this.cboTarget.SelectedValue = keepTargetId;
+                        this.loadedTargetId = this.cboTarget.SelectedValue as string ?? string.Empty;
                     }
                 }
             }
