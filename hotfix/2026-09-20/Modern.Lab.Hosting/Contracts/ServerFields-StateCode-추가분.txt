@@ -1,0 +1,35 @@
+ServerFields.cs 는 전체 파일을 싣지 않는다(공개 저장소 금지어 규칙).
+아래 블록을 ServerFields.Request.StateCode 클래스 안, All 배열 바로 다음에 붙여 넣는다.
+
+──────────────────────────────────────────────────────────────────────────────
+
+                /// <summary>접수취소의 숫자 짝.</summary>
+                public const string Draft0Status = "0";
+
+                /// <summary><see cref="Flow"/> 와 같은 순서의 숫자 짝 — 두 배열의 길이는 같아야 한다.</summary>
+                private static readonly string[] FlowStatus =
+                {
+                    "1", "5", "17", "49", "177", "8241", "24625"
+                };
+
+                /// <summary>회사가 알려 준 <c>STATE_CODE</c> ↔ <c>STATUS</c> 짝.
+                /// 쓰기 전문은 둘을 **같은 상태로 함께** 싣는다. 숫자의 뜻은 화면이 풀지 않는다 —
+                /// 짝을 옮겨 적을 뿐이고 판정은 서버가 한다. 모르는 상태면 빈 문자열이다.</summary>
+                public static string StatusOf(string stateCode)
+                {
+                    int index = System.Array.IndexOf(Flow, stateCode);
+
+                    if (index >= 0)
+                    {
+                        return FlowStatus[index];
+                    }
+
+                    return stateCode == Draft0 ? Draft0Status : string.Empty;
+                }
+
+──────────────────────────────────────────────────────────────────────────────
+
+짝은 이 순서다.
+
+    REQUEST=1 · DELIVERING=5 · ACCEPT_WAIT=17 · SAMPLE_WAIT=49
+    ANALIZING=177 · COMPLETE_WAIT=8241 · COMPLETED=24625 · DRAFT0=0
