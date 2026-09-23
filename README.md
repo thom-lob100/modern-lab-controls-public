@@ -16,3 +16,18 @@ Logistics 의뢰번호 링크는 폼베이스의 ShowRequestInfo → GetRequestI
 
 원본 커밋: aa85a665302a378a08d1cd9fef38ed0de6c29218
 검증: 빌드·공통 검사 통과, Logistics 33/0, Lot 117/0, Equipment/Lots 198/0.
+
+## Hold 엔지니어 자동완성 수정 — 2026-09-23
+
+Dialogs/Lots/LotHoldDialogForm.cs와 LotHoldDialogForm.Server.cs를 함께 교체합니다.
+기존 Grid/Designer 및 상위 Common을 그대로 사용합니다. 회사에서 Server.cs 전문을 변경했다면
+RequestEngineers(string keyword)의 Keyword 전달 부분을 기존 회사 조회에 반영합니다.
+
+- 최초 전체 사용자 조회를 없애고 사번 또는 성명 입력 후 300ms에 입력값을 Keyword로 조회합니다.
+- 응답은 USER_ID, USER_NM 컬럼을 포함해야 합니다. 회사 조회는 두 컬럼으로 검색해야 합니다.
+- 후보 선택 시에만 EngrUserId를 채우고 성명을 오른쪽에 표시합니다. 다시 입력하면 선택을 해제합니다.
+- 늦게 도착한 이전 검색 결과·실패를 무시하고, 빈 입력은 조회하지 않습니다.
+
+원본 커밋: 28f33d5d7f6a411810d0cfd9a5a78851fd3dc15b
+검증: 빌드·공통 검사 979/0, Lot 143/0, 신규 표시 64/0.
+실제 회사 사용자 조회·DB 저장은 회사에서 확인합니다. 릴리즈·DLL 변경은 없습니다.
