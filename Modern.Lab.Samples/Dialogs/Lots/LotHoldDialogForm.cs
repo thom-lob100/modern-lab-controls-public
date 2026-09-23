@@ -105,11 +105,15 @@ namespace Modern.Lab.Samples
             this.RefreshSelection();
         }
 
-        private static string SelectedKey(ModernComboBox combo, string column)
+        private static string SelectedKey(ModernComboBox combo)
         {
             DataRowView selected = combo.SelectedItem as DataRowView;
-            string key = selected == null ? string.Empty : TableHelper.CellText(selected.Row, column).Trim();
-            return string.Equals(combo.Text, key, StringComparison.Ordinal) ? key : string.Empty;
+            if (selected == null || !string.Equals(combo.Text,
+                    TableHelper.CellText(selected.Row, combo.DisplayMember), StringComparison.Ordinal))
+            {
+                return string.Empty;
+            }
+            return TableHelper.CellText(selected.Row, combo.ValueMember).Trim();
         }
 
         private void OnSelectionChanged(object sender, EventArgs e)
@@ -125,7 +129,7 @@ namespace Modern.Lab.Samples
             string input = editor == null ? this.cboEngineer.Text : editor.Text;
             DataRowView selected = this.cboEngineer.SelectedItem as DataRowView;
             if (this.engineerCandidatesReady && selected != null
-                    && string.Equals(input, TableHelper.CellText(selected.Row, "USER_ID"), StringComparison.Ordinal))
+                    && string.Equals(input, TableHelper.CellText(selected.Row, this.cboEngineer.DisplayMember), StringComparison.Ordinal))
             {
                 this.QueueSelectionRefresh();
                 return;
@@ -140,7 +144,8 @@ namespace Modern.Lab.Samples
             await Task.Yield();
             if (!this.IsCurrentEngineerSearch(version)) { return; }
             if (this.cboEngineer.DataSource != null && input.Length > 0
-                    && string.Equals(input, SelectedKey(this.cboEngineer, "USER_ID"), StringComparison.Ordinal))
+                    && string.Equals(input, this.cboEngineer.Text, StringComparison.Ordinal)
+                    && SelectedKey(this.cboEngineer).Length > 0)
             {
                 this.engineerCandidatesReady = true;
                 this.RefreshSelection();
@@ -228,13 +233,13 @@ namespace Modern.Lab.Samples
 
         private void RefreshSelection()
         {
-            string engineer = this.engineerCandidatesReady ? SelectedKey(this.cboEngineer, "USER_ID") : string.Empty;
+            string engineer = this.engineerCandidatesReady ? SelectedKey(this.cboEngineer) : string.Empty;
             this.EngrUserId = engineer;
             DataRowView row = this.cboEngineer.SelectedItem as DataRowView;
             this.lblEngineerName.Text = engineer.Length == 0 || row == null ? string.Empty
                     : TableHelper.CellText(row.Row, "USER_NM");
             this.btnOk.Enabled = this.ready && !this.closed && engineer.Length > 0
-                    && SelectedKey(this.cboCode, "REASON_CD").Length > 0
+                    && SelectedKey(this.cboCode).Length > 0
                     && !string.IsNullOrWhiteSpace(this.CurrentOperId)
                     && TableHelper.CellText(this.lot, ServerFields.Lot.LotId).Trim().Length > 0;
         }
@@ -243,8 +248,8 @@ namespace Modern.Lab.Samples
         {
             this.RefreshSelection();
             if (!this.btnOk.Enabled) { return; }
-            this.ReasonCode = SelectedKey(this.cboCode, "REASON_CD");
-            this.EngrUserId = SelectedKey(this.cboEngineer, "USER_ID");
+            this.ReasonCode = SelectedKey(this.cboCode);
+            this.EngrUserId = SelectedKey(this.cboEngineer);
             this.Description = this.txtDescription.Text ?? string.Empty;
             this.DialogResult = DialogResult.OK;
             this.Close();
