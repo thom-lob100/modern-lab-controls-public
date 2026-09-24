@@ -7,9 +7,9 @@ using Modern.Lab.Hosting.ResponseContracts;
 
 namespace Modern.Lab.MasterData
 {
-    public partial class ReasonCodeForm : MasterDataCrudFormBase
+    public partial class UserForm : MasterDataCrudFormBase
     {
-        public ReasonCodeForm()
+        public UserForm()
         {
             this.InitializeComponent();
             this.InitializeCrud(CreateDefinition());
@@ -20,15 +20,15 @@ namespace Modern.Lab.MasterData
         {
             return new MasterDataCrudDefinition
             {
-                EntityName = "Reason Code",
-                KeyColumns = KeyColumns,
-                ListTableId = "ReasonCode.SelectReasonCodes.ReasonCode"
+                EntityName = "User",
+                KeyColumn = "USER_ID",
+                ListTableId = "User.SelectUsers.User"
             };
         }
 
         protected override void OnListLoading()
         {
-            this.gridReasonCodes.DataSource = null;
+            this.gridUsers.DataSource = null;
             this.CrudEditor.SetSchema(new DataTable());
             this.CrudEditor.BeginNew();
         }
@@ -52,31 +52,31 @@ namespace Modern.Lab.MasterData
             base.OnLoadFailed(channel, failure);
         }
 
-        private void OnReasonCodeSelectionChanged(object sender, EventArgs e)
+        private void OnUserSelectionChanged(object sender, EventArgs e)
         {
             this.HandleSelectionChanged();
         }
         protected override DataTable RequestItems(string keyword)
         {
-            DataTable table = this.RequestReasonCodes(keyword);
-            string missing = ResponseColumns.Missing(table, KeyColumns);
+            DataTable table = this.RequestUsers(keyword);
+            string missing = ResponseColumns.Missing(table, UserIdColumn);
             if (missing.Length > 0)
             {
-                throw new ResponseContractException("Reason Code — missing columns: " + missing);
+                throw new ResponseContractException("User — missing column " + missing);
             }
             return table;
         }
         protected override DataActionResult InsertItem(object[] requestFields)
         {
-            return this.PrepareSavedItemReload(this.WriteReasonCode("InsertReasonCode", KeyOf(requestFields, true), requestFields));
+            return this.PrepareSavedItemReload(this.InsertUser(requestFields));
         }
         protected override DataActionResult UpdateItem(object[] requestFields)
         {
-            return this.PrepareSavedItemReload(this.WriteReasonCode("UpdateReasonCode", KeyOf(requestFields, false), requestFields));
+            return this.PrepareSavedItemReload(this.UpdateUser(requestFields));
         }
-        protected override DataActionResult DeleteItem(string[] keyValues)
+        protected override DataActionResult DeleteItem(string key)
         {
-            return this.WriteReasonCode("DeleteReasonCode", keyValues, new object[0]);
+            return this.DeleteUser(key);
         }
     }
 }

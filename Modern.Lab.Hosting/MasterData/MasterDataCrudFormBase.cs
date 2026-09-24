@@ -39,6 +39,12 @@ namespace Modern.Lab.Hosting.MasterData
         private TableResponse itemList;
         private bool blockedNoticeShowing;
         private string[] pendingSelectKey;
+        private int selectedIndex = -1;
+        private bool restoringSelection;
+        private bool writeLocked;
+        private bool keywordWasEnabled;
+        private bool searchWasEnabled;
+        private bool gridWasEnabled;
 
         protected virtual MasterDataCrudView CreateView()
         {
@@ -46,6 +52,7 @@ namespace Modern.Lab.Hosting.MasterData
             {
                 Keyword = this.FindByName<Modern.Lab.WinForms.Controls.Input.ModernTextBox>("txtKeyword")
                         ?? this.FindOnly<Modern.Lab.WinForms.Controls.Input.ModernTextBox>(),
+                SearchButton = this.FindByName<Modern.Lab.WinForms.Controls.Input.ModernButton>("btnSearch"),
                 Grid = this.FindOnly<Modern.Lab.WinForms.Controls.Data.ModernDataGrid>(),
                 EditorCard = this.FindByName<Modern.Lab.WinForms.Controls.Layout.ModernGroupBox>("editorCard"),
                 Editor = this.FindOnly<ModernPropertyGrid>(),
@@ -298,8 +305,15 @@ namespace Modern.Lab.Hosting.MasterData
                     "콤보 조회 전문이 없다: " + requestName + " — 화면의 .Server.cs 에서 RequestLookupItems 를 재정의할 것.");
         }
 
+        /// <summary>목록을 다시 조회한다. 저장·삭제가 진행 중이면 아무것도 하지 않는다 — 조회 시작이 편집기를 비워
+        /// 쓰기 실패 뒤 입력을 잃지 않게 한다(검색·Enter·화면 코드의 직접 호출 모두).</summary>
         protected void ReloadItems()
         {
+            if (this.ActionInProgress)
+            {
+                return;
+            }
+
             string keyword = this.view.Keyword == null ? string.Empty : this.view.Keyword.Text.Trim();
 
             this.listState = ListState.Loading;
@@ -344,8 +358,31 @@ namespace Modern.Lab.Hosting.MasterData
             this.view.Editor.BeginNew(this.NewItemDefaults());
         }
 
+        /// <summary>목록 선택이 바뀌면 화면이 부른다. 저장·삭제 중에는 선택을 전송 당시 행으로 되돌리고 편집기를 바꾸지 않는다.</summary>
         protected void HandleSelectionChanged()
         {
+            if (this.restoringSelection)
+            {
+                return;
+            }
+
+            if (this.ActionInProgress)
+            {
+                this.restoringSelection = true;
+
+                try
+                {
+                    this.view.Grid.SelectedIndex = this.selectedIndex;
+                }
+                finally
+                {
+                    this.restoringSelection = false;
+                }
+
+                return;
+            }
+
+            this.selectedIndex = this.view.Grid.SelectedIndex;
             DataRow row = SelectedRow(this.view.Grid.SelectedItem);
 
             if (row != null && this.ListOpen)
@@ -905,9 +942,51 @@ namespace Modern.Lab.Hosting.MasterData
             return values.Length > 0 && values[0].Trim().Length > 0 ? values[0].Trim() : null;
         }
 
+        /// <summary>
+        /// 저장·삭제가 시작되면 조회어·조회 버튼·목록·편집기를 잠그고, 끝나면(성공·실패·예외) 잠그기 전 상태로 되돌린다.
+        /// 화면에만 있는 조회 입력(상위 선택 콤보 등)은 <see cref="OnWriteLockChanged"/>에서 같이 잠근다.
+        /// </summary>
+        protected override void OnActionStateChanged(bool running)
+        {
+            base.OnActionStateChanged(running);
+
+            if (this.view == null || running == this.writeLocked)
+            {
+                return;
+            }
+
+            this.writeLocked = running;
+
+            if (running)
+            {
+                this.keywordWasEnabled = this.view.Keyword != null && this.view.Keyword.Enabled;
+                this.searchWasEnabled = this.view.SearchButton != null && this.view.SearchButton.Enabled;
+                this.gridWasEnabled = this.view.Grid.Enabled;
+            }
+
+            if (this.view.Keyword != null)
+            {
+                this.view.Keyword.Enabled = !running && this.keywordWasEnabled;
+            }
+
+            if (this.view.SearchButton != null)
+            {
+                this.view.SearchButton.Enabled = !running && this.searchWasEnabled;
+            }
+
+            this.view.Grid.Enabled = !running && this.gridWasEnabled;
+            this.UpdateActionState();
+            this.OnWriteLockChanged(running);
+        }
+
+        /// <summary>쓰기 중 잠금이 걸리거나(<paramref name="locked"/> true) 풀린 직후 불린다. 기본은 아무것도 하지 않는다.</summary>
+        protected virtual void OnWriteLockChanged(bool locked)
+        {
+        }
+
         private void UpdateActionState()
         {
-            this.view.Editor.Enabled = this.ListOpen;
+            this.view.Editor.Enabled = this.ListOpen && !this.ActionInProgress;
             this.view.NewButton.Enabled = this.CanWrite(WriteKind.New);
             this.view.CancelButton.Enabled = this.CanCancel;
             this.view.SaveButton.Enabled = this.CanWrite(WriteKind.Save);

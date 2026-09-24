@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Threading.Tasks;
 
 using Modern.Lab.Hosting.MasterData;
 using Modern.Lab.Hosting.Messaging;
@@ -22,8 +20,6 @@ namespace Modern.Lab.MasterData
         private string commonTyp = string.Empty;
         private string queryCommonTyp = string.Empty;
         private string actionCommonTyp = string.Empty;
-        private int selectedIndex = -1;
-        private bool bindingSelection;
 
         public CommonCodeForm() : this(false)
         {
@@ -113,44 +109,9 @@ namespace Modern.Lab.MasterData
             if (this.CanQuery) { base.OnKeywordEnterPressed(sender, e); }
         }
 
-        private new async void OnSaveClick(object sender, EventArgs e)
+        protected override void OnWriteLockChanged(bool locked)
         {
-            base.OnSaveClick(sender, e);
-            await this.GuardPendingWriteAsync();
-        }
-
-        private new async void OnDeleteClick(object sender, EventArgs e)
-        {
-            base.OnDeleteClick(sender, e);
-            await this.GuardPendingWriteAsync();
-        }
-
-        protected override void OnActionMenuOpening(object sender, CancelEventArgs e)
-        {
-            base.OnActionMenuOpening(sender, e);
-            if (this.ActionInProgress) { this.LockWriteInputs(); }
-        }
-
-        private void LockWriteInputs()
-        {
-            this.RefreshCrudActionState();
             this.SyncQueryInputs();
-            this.editorPane.Grid.Enabled = false;
-            this.CrudEditor.Enabled = false;
-        }
-
-        private async Task GuardPendingWriteAsync()
-        {
-            if (!this.ActionInProgress) { return; }
-            this.LockWriteInputs();
-            while (!this.IsDisposed && !this.Disposing && this.ActionInProgress)
-            {
-                await Task.Delay(25);
-            }
-            if (this.IsDisposed || this.Disposing) { return; }
-            this.RefreshCrudActionState();
-            this.SyncQueryInputs();
-            this.editorPane.Grid.Enabled = true;
         }
 
         private void SyncQueryInputs()
@@ -210,15 +171,6 @@ namespace Modern.Lab.MasterData
             {
                 this.editorPane.Grid.EmptyText = "No matching items.";
             }
-            if (this.bindingSelection) { return; }
-            if (this.ActionInProgress)
-            {
-                this.bindingSelection = true;
-                this.editorPane.Grid.SelectedIndex = this.selectedIndex;
-                this.bindingSelection = false;
-                return;
-            }
-            this.selectedIndex = this.editorPane.Grid.SelectedIndex;
             this.HandleSelectionChanged();
         }
 
