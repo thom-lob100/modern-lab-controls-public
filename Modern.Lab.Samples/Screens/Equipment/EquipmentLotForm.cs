@@ -1,0 +1,2148 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Text;
+using System.Windows.Forms;
+using Modern.Lab.Controls.Wpf.Data;
+using Modern.Lab.Controls.Wpf.Display;
+using Modern.Lab.Controls.Wpf.Input;
+using Modern.Lab.Data;
+using Modern.Lab.Hosting.Contracts;
+using Modern.Lab.Hosting;
+using Modern.Lab.Hosting.ResponseContracts;
+using Modern.Lab.Samples.Contracts;
+using Modern.Lab.Samples.Services;
+using Modern.Lab.WinForms.Controls.Data;
+using Modern.Lab.WinForms.Controls.Display;
+
+using Modern.Lab.Hosting.Messaging;
+
+namespace Modern.Lab.Samples
+{
+    public partial class EquipmentLotForm : ModernFormBase
+    {
+        private DataTable groupData;
+        private static readonly ResponseContractSet Contracts = EquipmentLotContracts.Build();
+
+        private DataTable equipmentData;
+        private DataTable portData;
+        private DataTable lotData;
+        private const string comboLabelColumn = "LABEL";
+        private const string comboValueColumn = "VALUE";
+        private const string comboEnabledColumn = "CAN";
+        private const string intervalSecondsColumn = "SECONDS";
+
+        private DataTable requestData;
+        private DataTable specimenData;
+        private DataTable durableData;
+        private RequestSnapshot requestSnapshot;
+
+        private TableResponse equipmentCurrent;
+        private TableResponse portCurrent;
+        private TableResponse lotCurrent;
+        private TableResponse requestCurrent;
+        private TableResponse specimenCurrent;
+        private TableResponse durableCurrent;
+
+        private TableResponse equipmentReserved;
+        private TableResponse portReserved;
+        private TableResponse lotReserved;
+        private TableResponse requestReserved;
+        private TableResponse specimenReserved;
+        private TableResponse durableReserved;
+
+        private string decisionPortEqpId = string.Empty;
+
+        private string durableTargetEqpId = string.Empty;
+        private string durableTargetPortNm = string.Empty;
+
+        private bool cyclePortsReflected;
+        private bool cycleLotsReflected;
+        private bool cycleRefresh;
+
+        private const string channelGroups = "groups";
+        private const string channelEquipments = "equipments";
+        private const string channelPorts = "ports";
+        private const string channelLots = "lots";
+        private const string channelRequests = "requests";
+
+        private const string channelDurables = "durables";
+
+        private const double issueWidth = 84d;
+
+        private const string lockGlyph = "\uE72E";
+        private const string unlockGlyph = "\uE785";
+
+        private readonly JobDecision decision = new JobDecision();
+        private readonly System.Windows.Forms.Timer refreshTimer = new System.Windows.Forms.Timer();
+
+        private readonly System.Windows.Forms.Timer targetFlashTimer = new System.Windows.Forms.Timer();
+
+        private System.Drawing.Color targetRestColor = System.Drawing.Color.Empty;
+
+        private int refreshSerial;
+        private int dependentSerial;
+
+        private string portEqpId = string.Empty;
+        private string requestLotId = string.Empty;
+        private string reqSerialNo = string.Empty;
+
+        private bool groupSetup;
+        private bool gridBinding;
+        private bool silentRefresh;
+
+        private int decisionHeight = -1;
+        private int decisionSplitHeightSeen = -1;
+        private int decisionSplitDistanceSeen = -1;
+        private bool fittingColumns;
+        private bool fittingListPanels;
+        private string requestFieldShape = string.Empty;
+        private bool syncingListHeights;
+        private int listHeight;
+        private int listPanelHeightSeen;
+        private int listSplitDistanceSeen;
+        private int decisionPending;
+
+        private int intervalSeconds;
+        private int secondsLeft;
+
+        private readonly DependentCover portCover;
+        private readonly DependentCover durableCover;
+
+        public EquipmentLotForm()
+        {
+            this.InitializeComponent();
+
+            this.portCover = new DependentCover(this.portBusy);
+            this.durableCover = new DependentCover(this.durableBusy);
+
+            this.InitializeModernForm(this.midPanel);
+
+            this.DeferredResize = true;
+
+            this.RegisterFindShortcut(this.gridLots, this.gridEqp);
+
+            this.menuEqp.Renderer = new Modern.Lab.WinForms.Rendering.ModernMenuRenderer();
+            this.menuPort.Renderer = new Modern.Lab.WinForms.Rendering.ModernMenuRenderer();
+            this.menuLot.Renderer = new Modern.Lab.WinForms.Rendering.ModernMenuRenderer();
+            this.menuLot.ShowItemToolTips = true;
+
+            this.targetFlashTimer.Interval = 1500;
+            this.targetFlashTimer.Tick += this.OnTargetFlashElapsed;
+            this.refreshTimer.Interval = 1000;
+            this.refreshTimer.Tick += this.OnRefreshTick;
+            this.Disposed += this.OnFormDisposed;
+
+            this.splitRight.SizeChanged += this.OnBottomLayoutSizeChanged;
+            this.splitDurableDecision.SizeChanged += this.OnBottomLayoutSizeChanged;
+            this.midPanel.SizeChanged += this.OnMidPanelSizeChanged;
+            this.actionCard.SizeChanged += this.OnActionColumnSizeChanged;
+            this.listHeight = this.splitLeft.SplitterDistance;
+            this.listPanelHeightSeen = this.midPanel.ClientSize.Height;
+            this.listSplitDistanceSeen = this.listHeight;
+            this.lblRequestRemarkCaption.ForeColor = Modern.Lab.Theming.ModernTheme.TextSecondary;
+            this.SyncActionColumns();
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            if (this.decisionHeight < 0)
+            {
+                this.decisionHeight = this.splitDurableDecision.Panel2.Height;
+                this.decisionSplitHeightSeen = this.splitDurableDecision.Height;
+                this.decisionSplitDistanceSeen = this.splitDurableDecision.SplitterDistance;
+            }
+
+            this.FitDecisionPanel();
+            this.FitListPanels();
+            this.SyncActionColumns();
+        }
+
+        private void OnFormLoad(object sender, EventArgs e)
+        {
+            this.cboGroup.DisplayMember = ServerFields.Group.EqpGrpId;
+            this.cboGroup.ValueMember = ServerFields.Group.EqpGrpId;
+
+            this.cboInterval.DisplayMember = comboLabelColumn;
+            this.cboInterval.ValueMember = intervalSecondsColumn;
+            this.cboInterval.DataSource = EquipmentLotPresenter.IntervalOptions();
+            this.cboInterval.SelectedValue = EquipmentLotPresenter.DefaultIntervalSeconds;
+            this.ApplyInterval();
+
+            this.decisionBar.Resize += this.OnDecisionBarResize;
+            this.AlignLockButton();
+
+            this.gridEqp.RowKeyMember = ServerFields.Equipment.EqpId;
+            this.gridPorts.RowKeyMember = ServerFields.Port.PortNm;
+
+            this.gridLots.RowKeyMember = ServerFields.Lot.LotId;
+            this.gridLots.RowColorMember = EquipmentLotPresenter.JobColorColumn;
+            this.gridLots.CellLinkClick += this.OnLotRequestLinkClick;
+
+            this.gridDurables.RowKeyMember = ServerFields.Durable.DurableId;
+            this.fieldRequest.FieldLinkClick += this.OnRequestFieldLinkClick;
+            string[] tones = Modern.Lab.Theming.Palette.GetColors(4);
+            this.kpiEquipment.Tone = tones[0];
+            this.kpiPorts.Tone = tones[1];
+            this.kpiLot.Tone = tones[2];
+            this.kpiDurable.Tone = tones[3];
+
+            this.badgeJob.SpinValues = EquipmentLotPresenter.JobStateStart;
+
+            this.PopulateMenu(this.menuEqp, "Mode", EquipmentPortManagementPresenter.EquipmentActions, this.OnEquipmentMenuItemClick);
+            this.PopulateMenu(this.menuPort, string.Empty, EquipmentPortManagementPresenter.PortActions, this.OnPortMenuItemClick);
+            this.PopulateJobMenu();
+
+            this.ddbPort.DisplayMember = comboLabelColumn;
+            this.ddbPort.ValueMember = comboValueColumn;
+            this.ddbPort.EnabledMember = comboEnabledColumn;
+            this.ddbEquipment.DisplayMember = comboLabelColumn;
+            this.ddbEquipment.ValueMember = comboValueColumn;
+            this.ddbEquipment.EnabledMember = comboEnabledColumn;
+
+            this.UpdateLockButton();
+            this.RefreshDecisionPanel();
+            this.RefreshActionStates();
+
+            this.LoadGroups();
+        }
+
+        private void OnFormDisposed(object sender, EventArgs e)
+        {
+            this.refreshTimer.Stop();
+            this.refreshTimer.Dispose();
+        }
+
+        private async void LoadGroups()
+        {
+            LoadOutcome<DataTable> outcome = await this.FetchAsync(
+                    channelGroups, () => this.RequestGroups());
+
+            if (!outcome.IsCurrent || outcome.Failure != null)
+            {
+                return;
+            }
+
+            this.groupData = outcome.Value;
+            this.groupSetup = true;
+
+            try
+            {
+                this.cboGroup.DataSource = outcome.Value;
+
+                if (outcome.Value != null && outcome.Value.Rows.Count > 0)
+                {
+                    this.cboGroup.SelectedIndex = 0;
+                }
+            }
+            finally
+            {
+                this.groupSetup = false;
+            }
+
+            this.ExecuteSearch();
+        }
+
+        private void OnGroupChanged(object sender, EventArgs e)
+        {
+            if (this.groupSetup)
+            {
+                return;
+            }
+
+            this.ExecuteSearch();
+        }
+
+        private void OnRefreshClick(object sender, EventArgs e)
+        {
+            this.secondsLeft = this.intervalSeconds;
+            this.UpdateCountdown();
+            this.ExecuteSearch();
+        }
+
+        private void OnRefreshTick(object sender, EventArgs e)
+        {
+            if (this.intervalSeconds <= 0)
+            {
+                return;
+            }
+
+            this.secondsLeft--;
+
+            if (this.secondsLeft > 0)
+            {
+                this.UpdateCountdown();
+                return;
+            }
+
+            if (this.QueryInProgress || this.ActionInProgress)
+            {
+                this.secondsLeft = 1;
+                this.UpdateCountdown();
+                return;
+            }
+
+            this.secondsLeft = this.intervalSeconds;
+            this.UpdateCountdown();
+            this.ExecuteSearch(true);
+        }
+
+        private void OnIntervalChanged(object sender, EventArgs e)
+        {
+            this.ApplyInterval();
+        }
+
+        private void ApplyInterval()
+        {
+            this.intervalSeconds = EquipmentLotPresenter.IntervalSeconds(this.cboInterval.SelectedValue);
+            this.secondsLeft = this.intervalSeconds;
+            this.refreshTimer.Enabled = this.intervalSeconds > 0;
+            this.UpdateCountdown();
+        }
+
+        private void UpdateCountdown()
+        {
+            string text = EquipmentLotPresenter.CountdownText(this.secondsLeft, this.intervalSeconds);
+            this.badgeCountdown.Text = text.Length == 0 ? "-" : text;
+            this.badgeCountdown.Visible = text.Length > 0;
+        }
+
+        private void OnDecisionSplitterMoved(object sender, SplitterEventArgs e)
+        {
+            Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer lower = this.splitDurableDecision;
+            bool dragged = lower.Height == this.decisionSplitHeightSeen && lower.SplitterDistance != this.decisionSplitDistanceSeen;
+
+            if (this.decisionHeight >= 0 && !this.fittingColumns && dragged)
+            {
+                this.decisionHeight = lower.Panel2.Height;
+                this.FitDecisionPanel();
+            }
+
+            this.decisionSplitHeightSeen = lower.Height;
+            this.decisionSplitDistanceSeen = lower.SplitterDistance;
+        }
+
+        private void OnListSplitterMoved(object sender, SplitterEventArgs e)
+        {
+            if (this.syncingListHeights || this.fittingListPanels)
+            {
+                return;
+            }
+
+            Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer source =
+                    sender as Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer;
+            Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer target =
+                    object.ReferenceEquals(source, this.splitLeft) ? this.splitLotRequest : this.splitLeft;
+
+            if (source == null)
+            {
+                return;
+            }
+
+            if (this.midPanel.ClientSize.Height == this.listPanelHeightSeen
+                    && source.SplitterDistance != this.listSplitDistanceSeen)
+            {
+                this.listHeight = source.SplitterDistance;
+            }
+
+            int room = target.Height - target.SplitterWidth;
+
+            if (room < target.Panel1MinSize + target.Panel2MinSize)
+            {
+                return;
+            }
+
+            int distance = Math.Max(target.Panel1MinSize, Math.Min(source.SplitterDistance, room - target.Panel2MinSize));
+            this.syncingListHeights = true;
+
+            try
+            {
+                target.SplitterDistance = distance;
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            finally
+            {
+                this.syncingListHeights = false;
+            }
+
+            this.listPanelHeightSeen = this.midPanel.ClientSize.Height;
+            this.listSplitDistanceSeen = distance;
+        }
+
+        private void OnMidPanelSizeChanged(object sender, EventArgs e)
+        {
+            this.FitListPanels();
+        }
+
+        private void FitListPanels()
+        {
+            int room = this.midPanel.ClientSize.Height - this.splitLeft.SplitterWidth;
+            int upperMinimum = Math.Max(this.splitLeft.Panel1MinSize, this.splitLotRequest.Panel1MinSize);
+            int lowerMinimum = Math.Max(this.splitLeft.Panel2MinSize, this.splitLotRequest.Panel2MinSize);
+
+            if (room < upperMinimum + lowerMinimum)
+            {
+                return;
+            }
+
+            int distance = Math.Max(upperMinimum, Math.Min(this.listHeight, room - lowerMinimum));
+            this.fittingListPanels = true;
+
+            try
+            {
+                this.splitLeft.SplitterDistance = distance;
+                this.splitLotRequest.SplitterDistance = distance;
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            finally
+            {
+                this.fittingListPanels = false;
+            }
+
+            this.listPanelHeightSeen = this.midPanel.ClientSize.Height;
+            this.listSplitDistanceSeen = distance;
+        }
+
+        private void OnBottomLayoutSizeChanged(object sender, EventArgs e)
+        {
+            this.FitDecisionPanel();
+            this.SyncActionColumns();
+        }
+
+        private void OnActionColumnSizeChanged(object sender, EventArgs e)
+        {
+            this.SyncActionColumns();
+        }
+
+        private void SyncActionColumns()
+        {
+            this.lblTarget.Width = Math.Max(0, this.ddbEquipment.Left - this.lblTarget.Left - this.actionCard.Padding.Left);
+        }
+
+        private void FitDecisionPanel()
+        {
+            if (this.decisionHeight < 0 || this.fittingColumns)
+            {
+                return;
+            }
+
+            Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer lower = this.splitDurableDecision;
+            int room = lower.Height - lower.SplitterWidth;
+
+            if (room < lower.Panel1MinSize + lower.Panel2MinSize)
+            {
+                return;
+            }
+
+            int decision = Math.Max(lower.Panel2MinSize, Math.Min(this.decisionHeight, room - lower.Panel1MinSize));
+            int upper = room - decision;
+
+            this.fittingColumns = true;
+
+            try
+            {
+                if (lower.SplitterDistance != upper)
+                {
+                    lower.SplitterDistance = upper;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            finally
+            {
+                this.fittingColumns = false;
+            }
+        }
+
+        private void OnDecisionBarResize(object sender, EventArgs e)
+        {
+            this.AlignLockButton();
+        }
+
+        private void AlignLockButton()
+        {
+            int left = this.decisionBar.ClientSize.Width - this.btnLock.Width - 4;
+
+            if (left < 0)
+            {
+                left = 0;
+            }
+
+            if (this.btnLock.Left != left)
+            {
+                this.btnLock.Left = left;
+            }
+        }
+
+        private void OnLockClick(object sender, EventArgs e)
+        {
+            this.decision.Locked = !this.decision.Locked;
+            this.UpdateLockButton();
+            this.RefreshDecisionPanel();
+            this.RefreshActionStates();
+        }
+
+        private void UpdateLockButton()
+        {
+            this.btnLock.IconGlyph = this.decision.Locked ? lockGlyph : unlockGlyph;
+            this.btnLock.Text = this.decision.Locked ? "Locked" : "Lock";
+            this.decisionCard.TitleRightText = this.decision.Locked ? "Locked" : "Top priority";
+        }
+
+        private string SelectedEqpGrpId()
+        {
+            return (Convert.ToString(this.cboGroup.SelectedValue) ?? string.Empty).Trim();
+        }
+
+        private string SelectedEquipmentId()
+        {
+            DataRowView equipment = this.gridEqp.SelectedItem as DataRowView;
+            return equipment == null ? string.Empty : TableHelper.CellText(equipment.Row, ServerFields.Equipment.EqpId).Trim();
+        }
+
+        private string SelectedLotId()
+        {
+            DataRowView lot = this.gridLots.SelectedItem as DataRowView;
+            return lot == null ? string.Empty : TableHelper.CellText(lot.Row, ServerFields.Lot.LotId).Trim();
+        }
+
+        private string SelectedRequestSerialNo()
+        {
+            DataRowView lot = this.gridLots.SelectedItem as DataRowView;
+            return lot == null ? string.Empty : TableHelper.CellText(lot.Row, ServerFields.Lot.ReqSerialNo).Trim();
+        }
+
+        private async void ExecuteSearch(bool silent = false)
+        {
+            string eqpGrpId = this.SelectedEqpGrpId();
+
+            if (eqpGrpId.Length == 0)
+            {
+                return;
+            }
+
+            string keepEqpId = this.decision.EqpId;
+
+            IDisposable busy = silent ? null : this.Busy("Loading equipment...", this.cboGroup.Text);
+
+            if (!silent)
+            {
+                this.InvalidateChannel(channelLots);
+                this.BindEquipmentTable(null, keepEqpId, false, false);
+            }
+
+            LoadOutcome<DataTable> outcome;
+
+            try
+            {
+                outcome = await this.FetchAsync(
+                        channelEquipments, () => this.RequestEquipments(eqpGrpId), silent);
+            }
+            finally
+            {
+                if (busy != null)
+                {
+                    busy.Dispose();
+                }
+            }
+
+            if (!outcome.IsCurrent)
+            {
+                return;
+            }
+
+            this.BindEquipments(outcome.Failure != null ? null : outcome.Value, keepEqpId, silent);
+        }
+
+        private void BindEquipments(DataTable equipments, string keepEqpId, bool silent)
+        {
+            this.BindEquipmentTable(equipments, keepEqpId, silent, true);
+        }
+
+        private void BindEquipmentTable(DataTable equipments, string keepEqpId, bool silent, bool loadLots)
+        {
+            bool merged;
+            this.equipmentData = this.BindJudged(
+                    EquipmentLotContracts.EquipmentTable, this.equipmentData, ref this.equipmentCurrent, ref this.equipmentReserved,
+                    equipments, ServerFields.Equipment.EqpId, silent, silent, out merged);
+
+            this.decision.EquipmentList = this.equipmentData;
+
+            if (Judged(this.equipmentCurrent))
+            {
+                EquipmentLotPresenter.MarkAutoCan(this.equipmentData);
+            }
+
+            ConfigureGrid(this.gridEqp, this.equipmentData, Judged(this.equipmentCurrent), EquipmentColumns);
+
+            this.decision.DropDetached();
+            DataTable table = this.equipmentData;
+            DataRow equipment = this.decision.Locked
+                    ? EquipmentLotPresenter.FindById(table, ServerFields.Equipment.EqpId, keepEqpId)
+                    : EquipmentLotPresenter.TopPriority(table);
+
+            this.gridBinding = true;
+
+            try
+            {
+                if (!merged)
+                {
+                    this.gridEqp.DataSource = table;
+                    this.SelectRow(this.gridEqp, table, ServerFields.Equipment.EqpId, TableHelper.CellText(equipment, ServerFields.Equipment.EqpId).Trim());
+                }
+                else if (this.gridEqp.SelectedItem == null)
+                {
+                    this.SelectRow(this.gridEqp, table, ServerFields.Equipment.EqpId, TableHelper.CellText(equipment, ServerFields.Equipment.EqpId).Trim());
+                }
+            }
+            finally
+            {
+                this.gridBinding = false;
+            }
+
+            this.RefreshDecisionTitles();
+
+            string previousEqpId = this.decision.EqpId;
+            this.decision.Equipment = equipment;
+            this.refreshSerial++;
+
+            this.silentRefresh = merged && this.decision.EqpId == previousEqpId && this.decision.EqpId.Length > 0;
+
+            this.LoadPorts(this.SelectedEquipmentId(), this.silentRefresh);
+            this.ApplyEquipmentDecision();
+
+            if (loadLots)
+            {
+                this.LoadDecisionLots(this.SelectedEqpGrpId(), this.decision.EqpId);
+            }
+
+            this.SyncDecisionDurables(false);
+        }
+
+        private static void FollowServerOrder(DataTable table, DataTable source, string keyColumn)
+        {
+            if (table == null)
+            {
+                return;
+            }
+
+            EquipmentLotPresenter.MarkServerOrder(table, source, keyColumn);
+            string sort = EquipmentLotPresenter.ServerOrderColumn + " ASC";
+
+            if (table.DefaultView.Sort != sort)
+            {
+                table.DefaultView.Sort = sort;
+            }
+        }
+
+        private void SelectRow(Modern.Lab.WinForms.Controls.Data.ModernDataGrid grid, DataTable table, string column, string id)
+        {
+            if (table == null || id.Length == 0)
+            {
+                return;
+            }
+
+            DataView view = table.DefaultView;
+
+            for (int index = 0; index < view.Count; index++)
+            {
+                if (TableHelper.CellText(view[index].Row, column).Trim() == id)
+                {
+                    if (grid.SelectedIndex != index)
+                    {
+                        grid.SelectedIndex = index;
+                    }
+
+                    return;
+                }
+            }
+        }
+
+        private void ApplyEquipmentDecision()
+        {
+            string eqpId = this.decision.EqpId;
+
+            this.ResolveDecisionPorts();
+            this.RefreshDecisionPanel();
+            this.RefreshActionStates();
+
+            this.cycleRefresh = this.silentRefresh;
+            this.cyclePortsReflected = this.portEqpId == eqpId;
+            this.cycleLotsReflected = true;
+        }
+
+        private void LoadDecisionLots(string eqpGrpId, string eqpId)
+        {
+            bool silent = this.silentRefresh;
+            this.LoadDependent(channelLots, () => this.RequestLots(eqpGrpId, eqpId), table => this.BindLots(table, silent), !silent, silent, null);
+        }
+
+        private void SyncDecisionDurables(bool refresh)
+        {
+            if (EquipmentLotPresenter.HasActiveJob(this.decision.Lot))
+            {
+                string goalDurableId = EquipmentLotPresenter.JobGoalCarrierId(this.decision.Lot);
+
+                if (goalDurableId.Length > 0 && this.decision.DurableId != goalDurableId)
+                {
+                    DataRow goalDurable = EquipmentLotPresenter.FindById(
+                            this.durableData, ServerFields.Durable.DurableId, goalDurableId);
+
+                    if (goalDurable != null)
+                    {
+                        this.decision.Durable = goalDurable;
+                    }
+                }
+
+                this.dependentSerial++;
+                this.RefreshDecisionPanel();
+                this.RefreshActionStates();
+                return;
+            }
+
+            string eqpId = this.decision.EqpId;
+            bool portsKnown = eqpId.Length > 0 && this.decisionPortEqpId == eqpId;
+            string portNm = EquipmentLotPresenter.JobOutPortNm(this.decision.Lot);
+
+            if (portNm.Length == 0 && portsKnown)
+            {
+                portNm = this.decision.OutPortNm;
+            }
+
+            if (portNm.Length == 0 && !portsKnown && eqpId == this.durableTargetEqpId)
+            {
+                return;
+            }
+
+            if (eqpId == this.durableTargetEqpId && portNm == this.durableTargetPortNm)
+            {
+                if (refresh && portNm.Length > 0)
+                {
+                    this.LoadDependent(channelDurables, () => this.RequestDurables(eqpId, portNm), table => this.BindDurables(table, true), false, true, null);
+                }
+
+                return;
+            }
+
+            this.InvalidateChannel(channelDurables);
+            this.durableData = null;
+            this.durableTargetEqpId = eqpId;
+            this.durableTargetPortNm = portNm;
+            this.durableCard.Text = EquipmentLotPresenter.DurableListTitle(string.Empty);
+
+            if (eqpId.Length == 0 || portNm.Length == 0)
+            {
+                this.durableCover.Reset();
+                this.gridDurables.DataSource = null;
+                this.decision.Durable = null;
+                this.dependentSerial++;
+                this.RefreshDecisionPanel();
+                this.RefreshActionStates();
+                return;
+            }
+
+            this.LoadDependent(channelDurables, () => this.RequestDurables(eqpId, portNm), table => this.BindDurables(table, false), true, false, this.durableCover);
+        }
+
+        private void SyncDecisionDurablesIfReady()
+        {
+            if (this.cyclePortsReflected && this.cycleLotsReflected)
+            {
+                this.SyncDecisionDurables(this.cycleRefresh);
+                this.cycleRefresh = false;
+            }
+        }
+
+        private string TargetDurableTyp()
+        {
+            DataRow port = this.portEqpId == this.durableTargetEqpId
+                    ? EquipmentLotPresenter.FindById(this.portData, ServerFields.Port.PortNm, this.durableTargetPortNm)
+                    : null;
+            string durableTyp = EquipmentLotPresenter.PortDurableTyp(port);
+
+            if (durableTyp.Length == 0 && this.durableData != null && this.durableData.Rows.Count > 0)
+            {
+                durableTyp = TableHelper.CellText(this.durableData.Rows[0], ServerFields.Durable.DurableTyp).Trim();
+            }
+
+            return durableTyp;
+        }
+
+        private async void LoadDependent(
+                string channel, Func<DataTable> request, Action<DataTable> bind, bool busy, bool silent, DependentCover cover)
+        {
+            if (busy)
+            {
+                this.decisionPending++;
+                this.decisionBusy.Busy = true;
+            }
+
+            if (cover != null)
+            {
+                cover.Begin();
+            }
+
+            LoadOutcome<DataTable> outcome;
+
+            try
+            {
+                outcome = await this.FetchAsync(channel, request, silent);
+            }
+            finally
+            {
+                if (cover != null)
+                {
+                    cover.End();
+                }
+
+                if (busy)
+                {
+                    this.decisionPending--;
+
+                    if (this.decisionPending == 0 && !this.decisionBusy.IsDisposed)
+                    {
+                        this.decisionBusy.Busy = false;
+                    }
+                }
+            }
+
+            if (!outcome.IsCurrent)
+            {
+                return;
+            }
+
+            bind(outcome.Failure != null ? null : outcome.Value);
+        }
+
+        private DataTable BindJudged(
+                string tableId, DataTable bound, ref TableResponse current, ref TableResponse reserved, DataTable incoming,
+                string keyColumn, bool silent, bool allowMerge, out bool merged)
+        {
+            merged = false;
+            reserved = null;
+
+            if (incoming == null)
+            {
+                current = null;
+                return null;
+            }
+
+            TableReception reception = TableJudgment.Receive(
+                    tableId, incoming, Contracts, EquipmentLotPresenter.ScreenColumns);
+
+            if (reception.IsMissingRequired)
+            {
+                current = null;
+                this.ShowMissingColumns(reception.Response, silent);
+                return null;
+            }
+
+            if (reception.HasReservedColumns)
+            {
+                current = null;
+                reserved = reception.Response;
+                return reception.DisplayCopy;
+            }
+
+            DataTable normalized = reception.Normalized;
+            merged = allowMerge && bound != null && current != null
+                    && TableJudgment.SameSchema(current.Table, normalized);
+            DataTable table = merged ? bound : normalized;
+
+            if (merged)
+            {
+                TableMerge.Apply(table, normalized, keyColumn, EquipmentLotPresenter.ScreenColumns);
+            }
+
+            FollowServerOrder(table, merged ? normalized : null, keyColumn);
+
+            current = TableJudgment.Judge(reception, table, Contracts);
+            EquipmentLotPresenter.MarkPriorityColors(table);
+            return table;
+        }
+
+        private static bool Judged(TableResponse current)
+        {
+            return current != null;
+        }
+
+        private DataRow ValidEquipment(DataRow row)
+        {
+            return Judged(this.equipmentCurrent) && row != null && !TableJudgment.IsInvalid(row) ? row : null;
+        }
+
+        private DataRow ValidPort(DataRow row)
+        {
+            return Judged(this.portCurrent) && row != null && !TableJudgment.IsInvalid(row) ? row : null;
+        }
+
+        private static void ConfigureGrid(
+                Modern.Lab.WinForms.Controls.Data.ModernDataGrid grid, DataTable table, bool judged,
+                Func<GridColumns, GridColumns> configure)
+        {
+            if (table == null)
+            {
+                return;
+            }
+
+            if (!judged)
+            {
+                GridColumns.Of(table).Apply(grid);
+                return;
+            }
+
+            GridColumns columns = configure(GridColumns.Of(table))
+                    .Hide(EquipmentLotPresenter.ServerOrderColumn, EquipmentLotPresenter.AutoCanColumn);
+
+            if (TableJudgment.HasInvalidRows(table))
+            {
+                columns.First(ServerFields.Priority, TableJudgment.IssueColumn);
+
+                foreach (ModernDataGridColumn column in columns.ToArray())
+                {
+                    if (column.DataPropertyName == TableJudgment.IssueColumn)
+                    {
+                        column.Kind = GridColumnKind.Badge;
+                        column.BadgeAccentValues = TableJudgment.IssueInvalid;
+                        column.TextAlignment = GridTextAlignment.Center;
+                    }
+                }
+            }
+            else
+            {
+                columns.Hide(TableJudgment.IssueColumn);
+            }
+
+            columns.Apply(grid);
+        }
+
+        private static GridColumns AutoVocabulary(GridColumns columns)
+        {
+            foreach (ModernDataGridColumn column in columns.ToArray())
+            {
+                if (column.DataPropertyName == ServerFields.Equipment.AutoYn.Column)
+                {
+                    column.CheckTrueValue = ServerFields.Equipment.AutoYn.Y;
+                    column.CheckFalseValue = ServerFields.Equipment.AutoYn.N;
+                }
+            }
+
+            return columns;
+        }
+
+        private static bool InvalidSelection(Modern.Lab.WinForms.Controls.Data.ModernDataGrid grid)
+        {
+            DataRowView view = grid.SelectedItem as DataRowView;
+            return view != null && TableJudgment.IsInvalid(view.Row);
+        }
+
+        private void OnEqpSelectionChanged(object sender, EventArgs e)
+        {
+            if (this.gridBinding)
+            {
+                return;
+            }
+
+            this.LoadPorts(this.SelectedEquipmentId(), false);
+            this.RefreshActionStates();
+        }
+
+        private void LoadPorts(string eqpId, bool silent)
+        {
+            bool invalid = InvalidSelection(this.gridEqp);
+            bool same = silent && !invalid && eqpId == this.portEqpId && this.portData != null;
+
+            if (!same)
+            {
+                this.InvalidateChannel(channelPorts);
+                this.portData = null;
+                this.portCurrent = null;
+                this.portReserved = null;
+            }
+
+            this.portEqpId = eqpId;
+            this.portCard.Text = eqpId.Length > 0 ? "Port List — " + eqpId : "Port List";
+
+            if (eqpId.Length > 0 && !invalid)
+            {
+                this.LoadDependent(channelPorts, () => this.RequestPorts(eqpId), table => this.BindPorts(table, same), !same && eqpId == this.decision.EqpId, same, same ? null : this.portCover);
+            }
+        }
+
+        private void BindPorts(DataTable ports, bool silent)
+        {
+            bool merged;
+            this.portData = this.BindJudged(
+                    EquipmentLotContracts.PortTable, this.portData, ref this.portCurrent, ref this.portReserved, ports, ServerFields.Port.PortNm, silent, silent, out merged);
+
+            ConfigureGrid(this.gridPorts, this.portData, Judged(this.portCurrent), PortColumns);
+
+            if (!merged)
+            {
+                this.gridPorts.DataSource = this.portData;
+            }
+
+            this.decision.DropDetached();
+            this.ResolveDecisionPorts();
+
+            if (this.portEqpId == this.decision.EqpId)
+            {
+                this.cyclePortsReflected = true;
+
+                if (this.durableTargetEqpId == this.decision.EqpId && this.durableTargetPortNm.Length == 0)
+                {
+                    this.SyncDecisionDurablesIfReady();
+                }
+            }
+
+            this.dependentSerial++;
+            this.RefreshDecisionPanel();
+            this.RefreshActionStates();
+        }
+
+        private void ResolveDecisionPorts()
+        {
+            if (EquipmentLotPresenter.HasActiveJob(this.decision.Lot))
+            {
+                return;
+            }
+
+            if (this.portData == null || this.portEqpId.Length == 0 || this.portEqpId != this.decision.EqpId)
+            {
+                return;
+            }
+
+            this.decisionPortEqpId = this.portEqpId;
+
+            if (this.decision.Locked)
+            {
+                this.decision.InPort = this.decision.InPortNm.Length > 0
+                        ? EquipmentLotPresenter.FindById(this.portData, ServerFields.Port.PortNm, this.decision.InPortNm)
+                        : EquipmentLotPresenter.TopPort(this.portData, ServerFields.Port.PortTyp.Input);
+                this.decision.OutPort = this.decision.OutPortNm.Length > 0
+                        ? EquipmentLotPresenter.FindById(this.portData, ServerFields.Port.PortNm, this.decision.OutPortNm)
+                        : EquipmentLotPresenter.TopPort(this.portData, ServerFields.Port.PortTyp.Output);
+
+                if (this.decision.OutPort == null && this.decision.InPort != null
+                        && EquipmentLotPresenter.PortTyp(this.decision.InPort) == ServerFields.Port.PortTyp.InputOutput)
+                {
+                    this.decision.OutPort = this.decision.InPort;
+                }
+
+                return;
+            }
+
+            string recommendedIn = TableHelper.CellText(this.decision.Equipment, ServerFields.Port.PortNm).Trim();
+            string recommendedOut = TableHelper.CellText(this.decision.Equipment, ServerFields.Equipment.GoalPortNm).Trim();
+
+            DataRow inPort = recommendedIn.Length > 0
+                    ? EquipmentLotPresenter.FindById(this.portData, ServerFields.Port.PortNm, recommendedIn)
+                    : null;
+            DataRow outPort = recommendedOut.Length > 0
+                    ? EquipmentLotPresenter.FindById(this.portData, ServerFields.Port.PortNm, recommendedOut)
+                    : null;
+
+            if (inPort == null)
+            {
+                inPort = EquipmentLotPresenter.TopPort(this.portData, ServerFields.Port.PortTyp.Input);
+            }
+
+            if (outPort == null)
+            {
+                outPort = EquipmentLotPresenter.TopPort(this.portData, ServerFields.Port.PortTyp.Output);
+            }
+
+            if (inPort != null && EquipmentLotPresenter.PortTyp(inPort) == ServerFields.Port.PortTyp.InputOutput)
+            {
+                outPort = inPort;
+            }
+
+            this.decision.InPort = inPort;
+            this.decision.OutPort = outPort;
+        }
+
+        private void BindLots(DataTable lots, bool silent)
+        {
+            string previousLotId = this.decision.LotId;
+            string colorsBefore = EquipmentLotPresenter.JobColorSignature(this.lotData);
+            bool merged;
+            this.lotData = this.BindJudged(
+                    EquipmentLotContracts.LotTable, this.lotData, ref this.lotCurrent, ref this.lotReserved, lots, ServerFields.Lot.LotId, silent, silent, out merged);
+            this.decision.DropDetached();
+
+            if (Judged(this.lotCurrent))
+            {
+                EquipmentLotPresenter.MarkJobColors(this.lotData);
+            }
+
+            ConfigureGrid(this.gridLots, this.lotData, Judged(this.lotCurrent), LotColumns);
+
+            if (!merged || (this.lotData != null && colorsBefore != EquipmentLotPresenter.JobColorSignature(this.lotData)))
+            {
+                this.gridLots.DataSource = this.lotData;
+            }
+
+            this.RefreshDecisionTitles();
+
+            this.decision.Lot = this.decision.Locked
+                    ? EquipmentLotPresenter.FindById(this.lotData, ServerFields.Lot.LotId, previousLotId)
+                    : EquipmentLotPresenter.TopPriority(this.lotData);
+
+            this.cycleLotsReflected = true;
+            this.SyncDecisionDurablesIfReady();
+
+            this.gridBinding = true;
+
+            try
+            {
+                if (!silent || this.gridLots.SelectedItem == null)
+                {
+                    this.SelectRow(this.gridLots, this.lotData, ServerFields.Lot.LotId, this.decision.LotId);
+                }
+            }
+            finally
+            {
+                this.gridBinding = false;
+            }
+
+            this.dependentSerial++;
+            this.LoadRequests(this.SelectedLotId(), this.SelectedRequestSerialNo(), silent);
+            this.RefreshDecisionPanel();
+            this.RefreshActionStates();
+        }
+
+        private void BindDurables(DataTable durables, bool silent)
+        {
+            string keepDurable = this.decision.DurableId;
+            bool merged;
+            this.durableData = this.BindJudged(
+                    EquipmentLotContracts.DurableTable, this.durableData, ref this.durableCurrent, ref this.durableReserved, durables, ServerFields.Durable.DurableId, silent, silent, out merged);
+
+            ConfigureGrid(this.gridDurables, this.durableData, Judged(this.durableCurrent), DurableColumns);
+
+            if (!merged)
+            {
+                this.gridDurables.DataSource = this.durableData;
+            }
+
+            this.decision.DropDetached();
+            this.durableCard.Text = EquipmentLotPresenter.DurableListTitle(this.TargetDurableTyp());
+
+            this.decision.Durable = this.decision.Locked
+                    ? EquipmentLotPresenter.FindById(this.durableData, ServerFields.Durable.DurableId, keepDurable)
+                    : EquipmentLotPresenter.TopPriority(this.durableData);
+
+            this.dependentSerial++;
+            this.RefreshDecisionPanel();
+            this.RefreshActionStates();
+        }
+
+        private void OnLotSelectionChanged(object sender, EventArgs e)
+        {
+            if (this.gridBinding)
+            {
+                return;
+            }
+
+            string key = this.SelectedRequestSerialNo();
+
+            if (key.Length > 0 && key == this.reqSerialNo && this.requestData != null)
+            {
+                this.requestLotId = this.SelectedLotId();
+                return;
+            }
+
+            this.LoadRequests(this.SelectedLotId(), key, false);
+        }
+
+        private void OnPortSelectionChanged(object sender, EventArgs e)
+        {
+            if (this.gridBinding)
+            {
+                return;
+            }
+
+            this.RefreshActionStates();
+        }
+
+        private async void LoadRequests(string lotId, string reqSerialNo, bool silent)
+        {
+            string key = (reqSerialNo ?? string.Empty).Trim();
+            bool sameRequest = silent && key.Length > 0 && key == this.reqSerialNo && this.requestData != null;
+            bool coverInstead = !sameRequest && !silent && key.Length > 0 && this.requestData != null;
+
+            if (!sameRequest && !coverInstead)
+            {
+                this.ClearRequests();
+            }
+
+            if (coverInstead)
+            {
+                this.InvalidateChannel(channelRequests);
+                this.requestSnapshot = null;
+                this.requestBusy.Busy = true;
+            }
+
+            this.requestLotId = lotId;
+            this.reqSerialNo = key;
+            this.UpdateRequestTitle();
+
+            this.lblRequestEmpty.Text = lotId.Length == 0 ? "Select a lot" : "No request on this lot";
+
+            if (key.Length == 0)
+            {
+                return;
+            }
+
+            LoadOutcome<RequestSnapshot> outcome;
+
+            try
+            {
+                outcome = await this.FetchAsync(
+                        channelRequests, () => this.FetchRequestSnapshot(key), silent);
+            }
+            finally
+            {
+                if (coverInstead && !this.requestBusy.IsDisposed)
+                {
+                    this.requestBusy.Busy = false;
+                }
+            }
+
+            if (!outcome.IsCurrent || key != this.reqSerialNo)
+            {
+                return;
+            }
+
+            if (outcome.Failure != null)
+            {
+                if (coverInstead)
+                {
+                    this.ClearRequests();
+                    this.requestLotId = lotId;
+                    this.reqSerialNo = key;
+                    this.UpdateRequestTitle();
+                }
+
+                this.BindRequests(null, false);
+                return;
+            }
+
+            this.BindRequests(outcome.Value, silent);
+        }
+
+        private RequestSnapshot FetchRequestSnapshot(string reqSerialNo)
+        {
+            System.Threading.Tasks.Task<DataTable> masterTask = System.Threading.Tasks.Task.Run(
+                    () => this.RequestTable("GetReqList", reqSerialNo));
+            System.Threading.Tasks.Task<DataTable> detailTask = System.Threading.Tasks.Task.Run(
+                    () => this.RequestTable("GetRequestInfo", reqSerialNo));
+            System.Threading.Tasks.Task.WaitAll(masterTask, detailTask);
+            return RequestSnapshot.Create(reqSerialNo, masterTask.Result, detailTask.Result);
+        }
+
+        private void BindRequests(RequestSnapshot snapshot, bool silent)
+        {
+            DataTable master = snapshot == null ? null : snapshot.Master.Copy();
+            DataTable details = snapshot == null ? null : snapshot.Details.Copy();
+
+            bool merged;
+            this.requestData = this.BindJudged(
+                    EquipmentLotContracts.RequestTable, this.requestData, ref this.requestCurrent, ref this.requestReserved,
+                    master, ServerFields.Request.ReqSerialNo, silent, silent, out merged);
+
+            this.BindRequestFields(this.requestData, snapshot == null ? string.Empty : snapshot.Remarks);
+
+            bool specimensMerged;
+            this.specimenData = this.BindJudged(
+                    EquipmentLotContracts.SpecimenTable, this.specimenData, ref this.specimenCurrent, ref this.specimenReserved,
+                    details, null, silent, silent && merged, out specimensMerged);
+
+            ConfigureGrid(this.gridSpecimens, this.specimenData, Judged(this.specimenCurrent), columns => columns);
+
+            if (!specimensMerged)
+            {
+                this.gridSpecimens.DataSource = this.specimenData;
+            }
+
+            this.requestSnapshot = snapshot;
+        }
+
+        private void BindRequestFields(DataTable overview, string remarks)
+        {
+            GridColumns columns = GridColumns.Of(overview);
+            if (Judged(this.requestCurrent))
+            {
+                if (!TableJudgment.HasInvalidRows(overview))
+                {
+                    columns.Hide(TableJudgment.IssueColumn);
+                }
+                columns = RequestOverviewColumns(columns);
+            }
+
+            ModernDataGridColumn[] members = columns.ToArray();
+            DataRow row = overview == null || overview.Rows.Count == 0 ? null : overview.Rows[0];
+            List<ModernFieldDefinition> fields = new List<ModernFieldDefinition>();
+
+            for (int index = 0; index < members.Length; index++)
+            {
+                string member = members[index].DataPropertyName;
+                fields.Add(new ModernFieldDefinition(member)
+                {
+                    IsLink = Judged(this.requestCurrent)
+                            && string.Equals(member, ReqSerialNoColumn, StringComparison.OrdinalIgnoreCase)
+                });
+            }
+
+            int fieldColumns = RequestFieldColumns(fields.Count);
+
+            if (this.fieldRequest.Columns != fieldColumns)
+            {
+                this.fieldRequest.Columns = fieldColumns;
+                this.requestFieldShape = string.Empty;
+            }
+
+            string shape = RequestFieldShape(fields);
+
+            if (!string.Equals(shape, this.requestFieldShape, StringComparison.Ordinal))
+            {
+                this.fieldRequest.DefineFields(fields.ToArray());
+                this.requestFieldShape = shape;
+            }
+
+            this.fieldRequest.SetRow(row);
+            int fieldRows = (fields.Count + fieldColumns - 1) / fieldColumns;
+            int fieldHeight = Math.Max(1, fieldRows) * 40 * this.DeviceDpi / 96;
+            int remarkHeight = row == null ? 0 : RequestRemarkHeight * this.DeviceDpi / 96;
+            int headerHeight = fieldHeight + remarkHeight;
+
+            if (this.tableRequestMaster.Height != headerHeight)
+            {
+                this.tableRequestMaster.RowStyles[0].Height = fieldHeight;
+                this.tableRequestMaster.RowStyles[1].Height = remarkHeight;
+                this.tableRequestMaster.Height = headerHeight;
+                this.FitRequestHeader(headerHeight);
+            }
+            this.lblRequestRemarkCaption.Text = "Remarks";
+            this.lblRequestRemark.Text = row == null ? string.Empty : ValueOrDash(remarks);
+            this.panelRequestRemark.Visible = row != null;
+            this.tableRequestMaster.Visible = row != null;
+            this.lblRequestEmpty.Visible = row == null;
+        }
+
+        private const int RequestFieldBaseColumns = 3;
+
+        private const int RequestFieldMaxColumns = 4;
+
+        private const int RequestRemarkHeight = 64;
+
+        private const int RequestDetailMinHeight = 160;
+
+        private static int RequestFieldColumns(int count)
+        {
+            int columns = RequestFieldBaseColumns;
+
+            while (columns < RequestFieldMaxColumns && count > columns && count % columns == 1)
+            {
+                columns++;
+            }
+
+            return columns;
+        }
+
+        private static string RequestFieldShape(List<ModernFieldDefinition> fields)
+        {
+            StringBuilder shape = new StringBuilder();
+
+            for (int index = 0; index < fields.Count; index++)
+            {
+                shape.Append(fields[index].Member).Append(fields[index].IsLink ? "*" : string.Empty).Append('|');
+            }
+
+            return shape.ToString();
+        }
+
+        private void FitRequestHeader(int desiredHeight)
+        {
+            int room = this.splitRequest.Height - this.splitRequest.SplitterWidth;
+            int detailMinimum = Math.Max(
+                    this.splitRequest.Panel2MinSize, RequestDetailMinHeight * this.DeviceDpi / 96);
+
+            if (room < this.splitRequest.Panel1MinSize + detailMinimum)
+            {
+                return;
+            }
+
+            int maximum = room - detailMinimum;
+            int height = Math.Max(this.splitRequest.Panel1MinSize, Math.Min(desiredHeight, maximum));
+
+            if (this.splitRequest.SplitterDistance == height)
+            {
+                return;
+            }
+
+            try
+            {
+                this.splitRequest.SplitterDistance = height;
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        private void OnRequestFieldLinkClick(object sender, ModernFieldLinkClickEventArgs e)
+        {
+            if (string.Equals(e.Member, ReqSerialNoColumn, StringComparison.OrdinalIgnoreCase))
+            {
+                this.ShowRequestSnapshot(e.Value);
+            }
+        }
+
+        private void OnLotRequestLinkClick(object sender, GridButtonClickEventArgs e)
+        {
+            DataRowView row = e.Item as DataRowView;
+
+            if (row == null || !string.Equals(e.DataPropertyName, ReqSerialNoColumn, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            this.ShowRequestSnapshot(TableHelper.CellText(row.Row, e.DataPropertyName));
+        }
+
+        private void ShowRequestSnapshot(string reqSerialNo)
+        {
+            string key = (reqSerialNo ?? string.Empty).Trim();
+            RequestSnapshot snapshot = this.requestSnapshot;
+
+            if (snapshot == null || key.Length == 0 || key != this.reqSerialNo || key != snapshot.RequestSerialNo)
+            {
+                return;
+            }
+
+            using (RequestInfoDialogForm dialog = new RequestInfoDialogForm())
+            {
+                dialog.SetRequest(
+                        snapshot.RequestSerialNo, snapshot.Master.Copy(), snapshot.Details.Copy(), snapshot.Remarks);
+                dialog.ShowDialog(this);
+            }
+        }
+
+        private void UpdateRequestTitle()
+        {
+            this.requestCard.Text = this.reqSerialNo.Length > 0 ? "Request List — " + this.reqSerialNo : "Request List";
+        }
+
+        private static DataRow Candidate(object selectedItem)
+        {
+            DataRowView view = selectedItem as DataRowView;
+            return view == null ? null : CandidateRow(view.Row);
+        }
+
+        private static DataRow CandidateRow(DataRow row)
+        {
+            if (!JobDecision.IsLive(row) || !EquipmentLotPresenter.IsCandidate(row))
+            {
+                return null;
+            }
+
+            return row;
+        }
+
+        private bool JobRunMode()
+        {
+            return EquipmentLotPresenter.HasActiveJob(this.decision.Lot);
+        }
+
+        private void OnEqpRowDoubleClick(object sender, EventArgs e)
+        {
+            if (this.JobRunMode())
+            {
+                return;
+            }
+
+            DataRow equipment = Candidate(this.gridEqp.SelectedItem);
+
+            if (equipment == null
+                    || TableHelper.CellText(equipment, ServerFields.Equipment.EqpId).Trim() == this.decision.EqpId)
+            {
+                return;
+            }
+
+            this.decision.Equipment = equipment;
+            this.decision.InPort = null;
+            this.decision.OutPort = null;
+            this.silentRefresh = false;
+            this.ApplyEquipmentDecision();
+        }
+
+        private void OnPortRowDoubleClick(object sender, EventArgs e)
+        {
+            if (this.JobRunMode())
+            {
+                return;
+            }
+
+            DataRow port = Candidate(this.gridPorts.SelectedItem);
+
+            if (port == null)
+            {
+                return;
+            }
+
+            if (this.portEqpId != this.decision.EqpId)
+            {
+                DataRow equipment = CandidateRow(
+                        EquipmentLotPresenter.FindById(this.equipmentData, ServerFields.Equipment.EqpId, this.portEqpId));
+
+                if (equipment == null)
+                {
+                    return;
+                }
+
+                this.decision.Equipment = equipment;
+                this.decision.InPort = null;
+                this.decision.OutPort = null;
+                this.ApplyPortChoice(port);
+                this.silentRefresh = false;
+                this.RefreshDecisionPanel();
+                this.RefreshActionStates();
+                this.cycleRefresh = false;
+                this.cyclePortsReflected = true;
+                this.cycleLotsReflected = true;
+                return;
+            }
+
+            this.ApplyPortChoice(port);
+            this.RefreshDecisionPanel();
+            this.RefreshActionStates();
+        }
+
+        private void ApplyPortChoice(DataRow port)
+        {
+            this.decisionPortEqpId = this.portEqpId;
+            string portTyp = EquipmentLotPresenter.PortTyp(port);
+
+            if (portTyp == ServerFields.Port.PortTyp.Input || portTyp == ServerFields.Port.PortTyp.InputOutput)
+            {
+                this.decision.InPort = port;
+            }
+
+            if (portTyp == ServerFields.Port.PortTyp.Output || portTyp == ServerFields.Port.PortTyp.InputOutput)
+            {
+                this.decision.OutPort = port;
+            }
+        }
+
+        private void OnLotRowDoubleClick(object sender, EventArgs e)
+        {
+            DataRow lot = Candidate(this.gridLots.SelectedItem);
+
+            if (lot == null)
+            {
+                return;
+            }
+
+            this.decision.Lot = lot;
+            this.RefreshDecisionPanel();
+            this.RefreshActionStates();
+        }
+
+        private void OnDurableRowDoubleClick(object sender, EventArgs e)
+        {
+            if (this.JobRunMode())
+            {
+                return;
+            }
+
+            DataRow durable = Candidate(this.gridDurables.SelectedItem);
+
+            if (durable == null)
+            {
+                return;
+            }
+
+            this.decision.Durable = durable;
+            this.RefreshDecisionPanel();
+            this.RefreshActionStates();
+        }
+
+        private void RefreshDecisionTitles()
+        {
+            this.eqpCard.TitleRightText = DecidedTitle(this.decision.EqpId, this.equipmentData, "equipment");
+            this.lotCard.TitleRightText = DecidedTitle(this.decision.LotId, this.lotData, "lots");
+            this.durableCard.TitleRightText = DecidedTitle(
+                    EquipmentLotPresenter.DecidedDurableId(this.decision), this.durableData, "durables");
+
+            string ports = this.decision.InPortNm.Length == 0 && this.decision.OutPortNm.Length == 0
+                    ? string.Empty
+                    : this.decision.InPortNm + " → " + this.decision.OutPortNm;
+
+            this.portCard.TitleRightText = DecidedTitle(ports, this.portData, "ports");
+        }
+
+        private static string DecidedTitle(string decided, DataTable table, string noun)
+        {
+            string count = table == null ? string.Empty : table.Rows.Count.ToString("N0") + " " + noun;
+
+            if (decided == null || decided.Length == 0)
+            {
+                return count;
+            }
+
+            return count.Length == 0 ? "Decided " + decided : "Decided " + decided + "  ·  " + count;
+        }
+
+        private void RefreshDecisionPanel()
+        {
+            DataRow lot = this.decision.Lot;
+            DataRow summary = EquipmentLotPresenter.JobSummary(this.decision);
+
+            string inPort = TableHelper.CellText(summary, EquipmentLotPresenter.SummaryInPort);
+            string outPort = TableHelper.CellText(summary, EquipmentLotPresenter.SummaryOutPort);
+            string durableType = TableHelper.CellText(summary, ServerFields.Durable.DurableTyp);
+            string mode = TableHelper.CellText(summary, ServerFields.Equipment.CommStatTyp.Column);
+            string jobState = TableHelper.CellText(summary, ServerFields.Lot.LastEventCd.Column);
+
+            this.kpiEquipment.Value = ValueOrDash(TableHelper.CellText(summary, ServerFields.Equipment.EqpId));
+            this.kpiPorts.Value = inPort.Length == 0 && outPort.Length == 0
+                    ? "-"
+                    : ValueOrDash(inPort) + " → " + ValueOrDash(outPort);
+            this.kpiLot.Value = ValueOrDash(this.decision.LotId);
+            string lotFlowOper = EquipmentLotPresenter.LotFlowOper(lot);
+            this.kpiLot.Title = lotFlowOper.Length == 0 ? "Lot" : "Lot  " + lotFlowOper;
+            string sourceDurable = TableHelper.CellText(summary, ServerFields.Durable.DurableId);
+            string goalDurable = TableHelper.CellText(summary, EquipmentLotPresenter.SummaryGoalDurable);
+            this.kpiDurable.Title = (durableType.Length == 0 ? "Durable" : "Durable · " + durableType)
+                    + (sourceDurable.Length == 0 ? string.Empty : "  from " + sourceDurable);
+            this.kpiDurable.Value = ValueOrDash(goalDurable);
+
+            this.badgeMode.Text = ValueOrDash(mode);
+            this.badgeMode.ColorValue = mode;
+            this.badgeJob.Text = jobState.Length == 0 ? "No job" : jobState;
+            this.badgeJob.ColorValue = jobState;
+            this.badgeJob.SpinValues = ServerFields.Lot.LastEventCd.JobStart;
+        }
+
+        private static string ValueOrDash(string value)
+        {
+            return string.IsNullOrEmpty(value) ? "-" : value;
+        }
+
+        private void RefreshActionStates()
+        {
+            DataRowView equipment = this.gridEqp.SelectedItem as DataRowView;
+            DataRow equipmentRow = this.ValidEquipment(equipment == null ? null : equipment.Row);
+
+            DataRowView port = this.gridPorts.SelectedItem as DataRowView;
+            DataRow portRow = this.ValidPort(port == null ? null : port.Row);
+
+            this.ddbEquipment.DataSource = EquipmentPortManagementPresenter.BuildMenuTable(
+                    EquipmentPortManagementPresenter.EquipmentActions, equipmentRow, null,
+                    key => EquipmentPortManagementForm.EquipmentActionReason(key, equipmentRow, null) == null);
+            this.ddbEquipment.Enabled = equipmentRow != null;
+
+            this.ddbPort.DataSource = EquipmentPortManagementPresenter.BuildMenuTable(
+                    EquipmentPortManagementPresenter.PortActions, equipmentRow, portRow,
+                    key => EquipmentPortManagementForm.EquipmentActionReason(key, equipmentRow, portRow) == null);
+            this.ddbPort.Enabled = portRow != null;
+
+            this.ApplyActionReason(
+                    this.btnJobPrep, JobActionReason(EquipmentLotPresenter.ActionJobPrep, this.decision));
+            this.ApplyActionReason(
+                    this.btnJobStart, JobActionReason(EquipmentLotPresenter.ActionJobStart, this.decision));
+            this.ApplyActionReason(
+                    this.btnJobEnd, JobActionReason(EquipmentLotPresenter.ActionJobEnd, this.decision));
+            string targetText = EquipmentLotPresenter.StatusLineText(this.decision);
+
+            if (!string.Equals(this.lblTarget.Text, targetText, StringComparison.Ordinal))
+            {
+                this.lblTarget.Text = targetText;
+                this.FlashTarget();
+            }
+
+            this.RefreshDecisionTitles();
+        }
+
+        private void FlashTarget()
+        {
+            if (this.targetRestColor.IsEmpty)
+            {
+                this.targetRestColor = this.lblTarget.ForeColor;
+            }
+
+            this.lblTarget.ForeColor = Modern.Lab.Theming.ModernTokenColors.Get(
+                    "Brush.Accent", Modern.Lab.Theming.ModernTheme.Accent);
+            this.targetFlashTimer.Stop();
+            this.targetFlashTimer.Start();
+        }
+
+        private void OnTargetFlashElapsed(object sender, EventArgs e)
+        {
+            this.targetFlashTimer.Stop();
+
+            if (!this.targetRestColor.IsEmpty)
+            {
+                this.lblTarget.ForeColor = this.targetRestColor;
+            }
+        }
+
+        private bool Allows(string key)
+        {
+            return JobActionReason(key, this.decision) == null;
+        }
+
+        private void OnJobPrepClick(object sender, EventArgs e)
+        {
+            this.ExecuteJob(EquipmentLotPresenter.ActionJobPrep);
+        }
+
+        private void OnJobStartClick(object sender, EventArgs e)
+        {
+            this.ExecuteJob(EquipmentLotPresenter.ActionJobStart);
+        }
+
+        private void OnJobEndClick(object sender, EventArgs e)
+        {
+            this.ExecuteJob(EquipmentLotPresenter.ActionJobEnd);
+        }
+
+        private void OnEquipmentActionClicked(object sender, DropDownItemClickedEventArgs e)
+        {
+            this.ExecuteEquipmentAction(e.Value as string);
+        }
+
+        private void ExecuteJob(string key)
+        {
+            if (!this.Allows(key))
+            {
+                return;
+            }
+
+            EquipmentJobDialogOptions options = new EquipmentJobDialogOptions();
+            options.Title = EquipmentLotPresenter.JobLabel(key) + " — " + this.decision.LotId;
+            options.SourceCaption = options.Title;
+            options.OkText = EquipmentLotPresenter.JobLabel(key);
+            options.Source = EquipmentLotPresenter.JobSummary(this.decision);
+            options.SourceFields = EquipmentLotPresenter.JobSummaryFields();
+
+            this.OpenJobDialog(key, options);
+        }
+
+        protected virtual void OpenJobDialog(string key, EquipmentJobDialogOptions options)
+        {
+            using (EquipmentJobDialogForm dialog = new EquipmentJobDialogForm(options))
+            {
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    this.ProcessJob(key, dialog.Description);
+                }
+            }
+        }
+
+        private void ProcessJob(string key, string description)
+        {
+            string lotId = this.decision.LotId;
+            string eqpId = this.decision.EqpId;
+            string inPort = this.decision.InPortNm;
+            string outPort = this.decision.OutPortNm;
+            string durableId = this.decision.DurableId;
+
+            switch (key)
+            {
+                case EquipmentLotPresenter.ActionJobPrep:
+                    this.Process(
+                            () => this.JobPrep(eqpId, inPort, outPort, lotId, durableId, description),
+                            "Preparing job for " + lotId + "…",
+                            () => this.ExecuteSearch(true));
+                    break;
+
+                case EquipmentLotPresenter.ActionJobStart:
+                    this.Process(
+                            () => this.JobStart(lotId, description),
+                            "Starting job " + lotId + "…",
+                            () => this.ExecuteSearch(true));
+                    break;
+
+                case EquipmentLotPresenter.ActionJobEnd:
+                    this.Process(
+                            () => this.JobEnd(lotId, description),
+                            "Ending job " + lotId + "…",
+                            () => this.ExecuteSearch(true));
+                    break;
+            }
+        }
+
+        private void ExecuteEquipmentAction(string key)
+        {
+            DataRowView selected = this.gridEqp.SelectedItem as DataRowView;
+            DataRow equipment = this.ValidEquipment(selected == null ? null : selected.Row);
+
+            if (equipment == null
+                    || EquipmentPortManagementForm.EquipmentActionReason(key, equipment, null) != null)
+            {
+                return;
+            }
+
+            string eqpId = TableHelper.CellText(equipment, ServerFields.Equipment.EqpId).Trim();
+
+            if (key == EquipmentPortManagementPresenter.ActionAuto)
+            {
+                this.ExecuteAutoToggle(equipment, !EquipmentPortManagementForm.IsAuto(equipment));
+                return;
+            }
+
+            if (!this.Confirm(
+                    "Change " + eqpId + " from " + EquipmentPortManagementPresenter.Mode(equipment) + " to "
+                            + Modern.Lab.WinForms.Controls.Dialogs.ModernMessageDialog.Emphasis(key) + "?",
+                    "Confirm"))
+            {
+                return;
+            }
+
+            this.Process(
+                    () => this.SetMode(eqpId, key),
+                    "Changing mode to " + key + "…",
+                    () => this.ExecuteSearch(true));
+        }
+
+        private void ExecuteAutoToggle(DataRow equipment, bool turnOn)
+        {
+            if (this.ValidEquipment(equipment) == null
+                    || EquipmentPortManagementForm.EquipmentActionReason(
+                            EquipmentPortManagementPresenter.ActionAuto, equipment, null) != null)
+            {
+                return;
+            }
+
+            string eqpId = TableHelper.CellText(equipment, ServerFields.Equipment.EqpId).Trim();
+
+            if (!this.Confirm(
+                    "Turn Auto " + Modern.Lab.WinForms.Controls.Dialogs.ModernMessageDialog.Emphasis(turnOn ? "on" : "off")
+                            + " for " + eqpId + "?",
+                    "Confirm"))
+            {
+                return;
+            }
+
+            this.Process(
+                    () => this.SetAuto(eqpId, turnOn),
+                    turnOn ? "Turning Auto on…" : "Turning Auto off…",
+                    () => this.ExecuteSearch(true));
+        }
+
+        private void OnEqpCellCheckChanged(object sender, GridCheckChangedEventArgs e)
+        {
+            DataRowView equipment = e.Item as DataRowView;
+
+            if (equipment == null || e.DataPropertyName != ServerFields.Equipment.AutoYn.Column
+                    || equipment.Row.RowState == DataRowState.Detached || equipment.Row.RowState == DataRowState.Deleted)
+            {
+                return;
+            }
+
+            equipment.Row[ServerFields.Equipment.AutoYn.Column] = e.IsChecked ? ServerFields.Equipment.AutoYn.N : ServerFields.Equipment.AutoYn.Y;
+            this.ExecuteAutoToggle(equipment.Row, e.IsChecked);
+        }
+
+        private void ExecutePortAction(string key)
+        {
+            DataRow equipment = this.ValidEquipment(
+                    EquipmentLotPresenter.FindById(this.equipmentData, ServerFields.Equipment.EqpId, this.portEqpId));
+            DataRowView selected = this.gridPorts.SelectedItem as DataRowView;
+            DataRow port = this.ValidPort(selected == null ? null : selected.Row);
+
+            if (equipment == null || port == null
+                    || EquipmentPortManagementForm.EquipmentActionReason(key, equipment, port) != null)
+            {
+                return;
+            }
+
+            string eqpId = this.portEqpId;
+            string portNm = TableHelper.CellText(port, ServerFields.Port.PortNm).Trim();
+
+            if (!this.Confirm(
+                    "Change " + eqpId + " port " + portNm
+                            + " from " + EquipmentPortManagementPresenter.PortStatus(port) + " to "
+                            + Modern.Lab.WinForms.Controls.Dialogs.ModernMessageDialog.Emphasis(
+                                    EquipmentPortManagementPresenter.PortStatusAfter(key))
+                            + " (" + key + ")?",
+                    "Confirm"))
+            {
+                return;
+            }
+
+            this.Process(
+                    () => this.SetPortStatus(eqpId, portNm, key),
+                    key + " port " + portNm + "…",
+                    () => this.ExecuteSearch(true));
+        }
+
+        private void Process(Func<DataActionResult> call, string busyText, Action refresh)
+        {
+            this.RunAction(
+                    call,
+                    delegate(DataActionResult reply)
+                    {
+                        this.ShowToast(
+                                reply.Message.Length > 0 ? reply.Message : "Done.",
+                                ToastKind.Success);
+                        refresh();
+                    },
+                    busyText);
+        }
+
+        private void PopulateMenu(
+                ContextMenuStrip menu, string headerText,
+                IList<EquipmentPortAction> actions, EventHandler onClick)
+        {
+            menu.Items.Clear();
+
+            if (!string.IsNullOrEmpty(headerText))
+            {
+                menu.Items.Add(new ToolStripLabel(headerText));
+            }
+
+            foreach (EquipmentPortAction action in actions)
+            {
+                if (action.SeparatorBefore)
+                {
+                    menu.Items.Add(new ToolStripSeparator());
+                }
+
+                ToolStripMenuItem item = new ToolStripMenuItem(action.Label);
+                item.Tag = action.Key;
+                item.Click += onClick;
+                menu.Items.Add(item);
+            }
+        }
+
+        private void PopulateJobMenu()
+        {
+            this.menuLot.Items.Clear();
+            this.menuLot.Items.Add(new ToolStripLabel("Execute"));
+
+            foreach (LotAction action in EquipmentLotPresenter.JobActions)
+            {
+                ToolStripMenuItem item = new ToolStripMenuItem(action.Label);
+                item.Tag = action.Key;
+                item.Click += this.OnJobMenuItemClick;
+                this.menuLot.Items.Add(item);
+            }
+        }
+
+        private void OnMenuEqpOpening(object sender, CancelEventArgs e)
+        {
+            DataRowView selected = this.gridEqp.SelectedItem as DataRowView;
+            DataRow equipment = this.ValidEquipment(selected == null ? null : selected.Row);
+
+            e.Cancel = !ApplyMenuStates(
+                    this.menuEqp, EquipmentPortManagementPresenter.EquipmentActions, equipment, null, equipment != null);
+        }
+
+        private void OnMenuPortOpening(object sender, CancelEventArgs e)
+        {
+            DataRow equipment = this.ValidEquipment(
+                    EquipmentLotPresenter.FindById(this.equipmentData, ServerFields.Equipment.EqpId, this.portEqpId));
+            DataRowView selected = this.gridPorts.SelectedItem as DataRowView;
+            DataRow port = this.ValidPort(selected == null ? null : selected.Row);
+
+            e.Cancel = !ApplyMenuStates(
+                    this.menuPort, EquipmentPortManagementPresenter.PortActions, equipment, port, equipment != null && port != null);
+        }
+
+        private void OnMenuLotOpening(object sender, CancelEventArgs e)
+        {
+            DataRow lot = Candidate(this.gridLots.SelectedItem);
+
+            if (lot != null && !object.ReferenceEquals(lot, this.decision.Lot))
+            {
+                this.decision.Lot = lot;
+                this.RefreshDecisionPanel();
+                this.RefreshActionStates();
+            }
+
+            foreach (object entry in this.menuLot.Items)
+            {
+                ToolStripMenuItem item = entry as ToolStripMenuItem;
+
+                if (item != null && EquipmentLotPresenter.IsJobKey(item.Tag as string))
+                {
+                    item.Enabled = this.Allows(item.Tag as string);
+                }
+            }
+
+            e.Cancel = this.decision.Equipment == null;
+        }
+
+        private static bool ApplyMenuStates(
+                ContextMenuStrip menu, IList<EquipmentPortAction> actions,
+                DataRow equipment, DataRow port, bool hasTarget)
+        {
+            if (!hasTarget)
+            {
+                return false;
+            }
+
+            foreach (object entry in menu.Items)
+            {
+                ToolStripMenuItem item = entry as ToolStripMenuItem;
+
+                if (item == null)
+                {
+                    continue;
+                }
+
+                string key = item.Tag as string;
+
+                foreach (EquipmentPortAction action in actions)
+                {
+                    if (action.Key == key)
+                    {
+                        ApplyActionReason(
+                                item, EquipmentPortManagementForm.EquipmentActionReason(key, equipment, port));
+                        item.Checked = EquipmentPortManagementPresenter.IsChecked(key, equipment);
+                        item.Text = EquipmentPortManagementPresenter.LabelOf(action, equipment, false);
+                        break;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private void OnEquipmentMenuItemClick(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = sender as ToolStripMenuItem;
+
+            if (item != null)
+            {
+                this.ExecuteEquipmentAction(item.Tag as string);
+            }
+        }
+
+        private void OnPortActionClicked(object sender, DropDownItemClickedEventArgs e)
+        {
+            this.ExecutePortAction(e.Value as string);
+        }
+
+        private void OnPortMenuItemClick(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = sender as ToolStripMenuItem;
+
+            if (item != null)
+            {
+                this.ExecutePortAction(item.Tag as string);
+            }
+        }
+
+        private void OnJobMenuItemClick(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = sender as ToolStripMenuItem;
+
+            if (item != null)
+            {
+                this.ExecuteJob(item.Tag as string);
+            }
+        }
+
+        private sealed class RequestSnapshot
+        {
+            private RequestSnapshot(string reqSerialNo, DataTable master, DataTable details, string remarks)
+            {
+                this.RequestSerialNo = reqSerialNo;
+                this.Master = master;
+                this.Details = details;
+                this.Remarks = remarks;
+            }
+
+            public string RequestSerialNo { get; private set; }
+
+            public DataTable Master { get; private set; }
+
+            public DataTable Details { get; private set; }
+
+            public string Remarks { get; private set; }
+
+            public static RequestSnapshot Create(string reqSerialNo, DataTable master, DataTable details)
+            {
+                DataTable masterCopy = master == null ? new DataTable("REQUEST") : master.Copy();
+                DataTable detailCopy = details == null ? new DataTable("REQUEST_DETAIL") : details.Copy();
+                string remarks = string.Empty;
+
+                if (masterCopy.Columns.Contains(ServerFields.Request.Purpose))
+                {
+                    if (masterCopy.Rows.Count > 0)
+                    {
+                        remarks = TableHelper.CellText(masterCopy.Rows[0], ServerFields.Request.Purpose);
+                    }
+
+                    masterCopy.Columns.Remove(ServerFields.Request.Purpose);
+                }
+
+                return new RequestSnapshot(reqSerialNo, masterCopy, detailCopy, remarks);
+            }
+        }
+        private void ClearRequests()
+        {
+            this.InvalidateChannel(channelRequests);
+            this.requestLotId = string.Empty;
+            this.reqSerialNo = string.Empty;
+            this.requestSnapshot = null;
+            this.requestData = null;
+            this.requestCurrent = null;
+            this.requestReserved = null;
+            this.specimenData = null;
+            this.specimenCurrent = null;
+            this.specimenReserved = null;
+            this.BindRequestFields(null, string.Empty);
+            this.gridSpecimens.DataSource = null;
+            this.UpdateRequestTitle();
+        }
+        internal static string JobActionReason(string actionKey, JobDecision decision)
+        {
+            DataRow equipment = EquipmentLotPresenter.JobEquipment(decision);
+            string reason = RequiredReason(actionKey, decision, equipment);
+            if (reason != null)
+            {
+                return reason;
+            }
+
+            DataRow lot = decision.Lot;
+            reason = CommonReason(decision, equipment, lot);
+            if (reason != null)
+            {
+                return reason;
+            }
+
+            switch (actionKey)
+            {
+                case EquipmentLotPresenter.ActionJobPrep:
+                    return JobPrepReason(decision, equipment, lot);
+                case EquipmentLotPresenter.ActionJobStart:
+                    return JobStartReason(decision, equipment, lot);
+                case EquipmentLotPresenter.ActionJobEnd:
+                    return JobEndReason(decision, equipment, lot);
+            }
+
+            return NoDecision;
+        }
+        private static string RequiredReason(string actionKey, JobDecision decision, DataRow equipment)
+        {
+            if (decision == null || !EquipmentLotPresenter.IsJobKey(actionKey))
+            {
+                return NoDecision;
+            }
+
+            return equipment == null ? "Select an equipment first." : null;
+        }
+    }
+}
