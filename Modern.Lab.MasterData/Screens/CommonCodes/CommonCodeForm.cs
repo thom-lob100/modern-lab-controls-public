@@ -1,17 +1,18 @@
 using System;
-using System.Data;
 using System.Collections.Generic;
-using System.Windows.Forms;
+using System.ComponentModel;
+using System.Data;
+using System.Threading.Tasks;
 
-using Modern.Lab.Hosting;
+using Modern.Lab.Hosting.MasterData;
 using Modern.Lab.Hosting.Messaging;
 using Modern.Lab.Hosting.ResponseContracts;
 
 namespace Modern.Lab.MasterData
 {
-    public partial class CommonCodeForm : ModernFormBase
+    public partial class CommonCodeForm : MasterDataCrudFormBase
     {
-        private enum ListState { NoParent, Loading, Ready, Failed }
+        private const string TypesChannel = "types";
 
         private readonly bool manageTypes;
         private bool bindingTypes;
@@ -19,7 +20,10 @@ namespace Modern.Lab.MasterData
         private bool typeSelectionQueued;
         private System.Windows.Controls.TextChangedEventHandler typeTextChanged;
         private string commonTyp = string.Empty;
-        private bool saving;
+        private string queryCommonTyp = string.Empty;
+        private string actionCommonTyp = string.Empty;
+        private int selectedIndex = -1;
+        private bool bindingSelection;
 
         public CommonCodeForm() : this(false)
         {
@@ -29,9 +33,8 @@ namespace Modern.Lab.MasterData
         {
             this.manageTypes = manageTypes;
             this.InitializeComponent();
-            this.InitializeModernForm();
-            this.DeferredResize = true;
-            this.ConfigurePane(this.editorPane);
+            this.InitializeCrud(this.CreateDefinition());
+            this.DefineEditors();
             if (!this.manageTypes)
             {
                 this.cmbCommonType.SelectedIndexChanged += this.OnCommonTypeChanged;
@@ -40,18 +43,8 @@ namespace Modern.Lab.MasterData
                 this.cmbCommonType.Child.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent,
                         this.typeTextChanged, true);
             }
-            this.UpdateActions();
-            this.Load += (sender, e) =>
-            {
-                if (this.manageTypes)
-                {
-                    this.Reload(this.editorPane, null);
-                }
-                else
-                {
-                    this.LoadTypes(true);
-                }
-            };
+            this.Load += this.OnCommonCodeLoad;
+            this.SyncQueryInputs();
         }
 
         protected override void Dispose(bool disposing)
@@ -62,241 +55,180 @@ namespace Modern.Lab.MasterData
                         this.typeTextChanged);
                 this.typeTextChanged = null;
             }
+            if (disposing && this.components != null)
+            {
+                this.components.Dispose();
+                this.components = null;
+            }
             base.Dispose(disposing);
         }
 
-        private void ConfigurePane(CodePane pane)
+        private MasterDataCrudDefinition CreateDefinition()
         {
-            this.DefineEditors(pane);
-            pane.Grid.SelectionChanged += (sender, e) => this.SelectRow(pane);
-            pane.Editor.ValueChanged += (sender, e) => this.UpdateActions();
-            pane.Search.Click += (sender, e) => this.Reload(pane, null);
-            pane.Keyword.EnterPressed += (sender, e) => this.Reload(pane, null);
-            pane.New.Click += (sender, e) => this.BeginNew(pane);
-            pane.Cancel.Click += (sender, e) => this.CancelEdit(pane);
-            pane.Save.Click += (sender, e) => this.SaveItem(pane);
-            pane.Delete.Click += (sender, e) => this.DeleteItem(pane);
-            this.RegisterFindShortcut(pane.Grid);
-        }
-
-        private void ClearPane(CodePane pane, ListState state)
-        {
-            pane.Binding = true;
-            pane.State = state;
-            pane.Table = null;
-            pane.StoredKey = string.Empty;
-            pane.Grid.DataSource = null;
-            pane.Editor.SetSchema(new DataTable());
-            pane.Editor.BeginNew();
-            pane.Binding = false;
-            pane.Grid.EmptyText = state == ListState.Loading ? "Loading…" : "Select a saved common type.";
-        }
-
-        private void Reload(CodePane pane, string selectKey)
-        {
-            if (this.saving || this.ActionInProgress || this.loadingTypes
-                    || (!this.manageTypes && (this.commonTyp.Length == 0 || this.commonTyp != this.SelectedCommonTyp)))
+            if (this.manageTypes)
             {
-                return;
-            }
-            string parent = this.commonTyp;
-            string keyword = pane.Keyword.Text;
-            this.ClearPane(pane, ListState.Loading);
-            this.UpdateActions();
-            bool isDetail = !this.manageTypes;
-            this.LoadAsync(pane.Channel,
-                    () => this.SelectItems(isDetail, parent, keyword),
-                    table => this.BindItems(pane, table, selectKey),
-                    current => this.AfterLoaded(pane, current));
-            this.UpdateActions();
-        }
-
-        private void BindItems(CodePane pane, DataTable table, string selectKey)
-        {
-            pane.Binding = true;
-            pane.Table = table;
-            pane.State = ListState.Ready;
-            pane.Editor.SetSchema(table);
-            pane.Grid.EmptyText = "No matching items.";
-            pane.Grid.DataSource = table;
-            int selected = table.Rows.Count == 0 ? -1 : 0;
-            for (int i = 0; i < table.Rows.Count; i++)
-            {
-                if (string.Equals(Convert.ToString(table.Rows[i][pane.KeyColumn]), selectKey, StringComparison.OrdinalIgnoreCase))
+                return new MasterDataCrudDefinition
                 {
-                    selected = i;
-                    break;
-                }
+                    EntityName = "Common Type",
+                    KeyColumn = TypeKeyColumn,
+                    ListTableId = "CommonCode.SelectCommonTypes.CommonType"
+                };
             }
-            pane.Grid.SelectedIndex = selected;
-            pane.Binding = false;
-            this.SelectRow(pane);
+            return new MasterDataCrudDefinition
+            {
+                EntityName = "Common Code",
+                KeyColumns = CodeKeyColumns,
+                ListTableId = "CommonCode.SelectCommonCodes.CommonCode"
+            };
         }
 
-        private void AfterLoaded(CodePane pane, bool current)
+        private void OnCommonCodeLoad(object sender, EventArgs e)
         {
-            if (current && pane.State == ListState.Loading)
+            if (this.manageTypes)
             {
-                pane.State = ListState.Failed;
-                pane.Grid.EmptyText = "Could not load items. Search to retry.";
-            }
-            this.PostToUi(this.UpdateActions);
-        }
-
-        private void SelectRow(CodePane pane)
-        {
-            if (pane.Binding || this.saving || pane.State != ListState.Ready)
-            {
-                return;
-            }
-            DataRowView view = pane.Grid.SelectedItem as DataRowView;
-            DataRow row = view == null ? pane.Grid.SelectedItem as DataRow : view.Row;
-            if (row == null)
-            {
-                this.LoadNewValues(pane);
+                this.OnFormLoad(sender, e);
             }
             else
             {
-                pane.NewMode = false;
-                pane.StoredKey = Convert.ToString(row[pane.KeyColumn]);
-                this.SetEditorMode(pane, false);
-                pane.Editor.LoadRow(row);
-
-            }
-            this.UpdateActions();
-        }
-
-        private void LoadNewValues(CodePane pane)
-        {
-            pane.NewMode = true;
-            pane.StoredKey = string.Empty;
-            this.SetEditorMode(pane, true);
-            DataRow row = pane.Table.NewRow();
-            row["SORT_NO"] = "0";
-            row["USE_YN"] = "Y";
-            if (!this.manageTypes)
-            {
-                row["COMMON_TYP"] = this.commonTyp;
-            }
-            pane.Editor.LoadRow(row);
-        }
-
-        private void SetEditorMode(CodePane pane, bool isNew)
-        {
-            string keys = isNew ? string.Empty : !this.manageTypes ? "COMMON_TYP,TYP_VAL" : "COMMON_TYP";
-            if (pane.Editor.KeyColumns != keys)
-            {
-                pane.Editor.SetSchema(new DataTable());
-            }
-            pane.Editor.KeyColumns = keys;
-            pane.Editor.SetSchema(pane.Table);
-        }
-
-        private void BeginNew(CodePane pane)
-        {
-            if (!this.CanEdit(pane))
-            {
-                return;
-            }
-            pane.Binding = true;
-            pane.Grid.SelectedIndex = -1;
-            pane.Binding = false;
-            this.LoadNewValues(pane);
-            pane.Editor.FocusFirstEditor();
-            this.UpdateActions();
-        }
-
-        private void CancelEdit(CodePane pane)
-        {
-            if (this.CanEdit(pane))
-            {
-                pane.Editor.RevertEdits();
-                this.UpdateActions();
+                this.LoadTypes(true);
             }
         }
 
-        private bool CanEdit(CodePane pane)
+        private bool CanQuery
         {
-            return !this.saving && !this.ActionInProgress && pane.State == ListState.Ready
-                    && (this.manageTypes || (this.commonTyp.Length > 0 && this.commonTyp == this.SelectedCommonTyp));
+            get
+            {
+                return !this.ActionInProgress && !this.loadingTypes
+                        && (this.manageTypes || (this.commonTyp.Length > 0 && this.commonTyp == this.SelectedCommonTyp));
+            }
         }
 
-        private void SaveItem(CodePane pane)
+        private new void OnSearchClick(object sender, EventArgs e)
         {
-            if (!this.CanEdit(pane) || !this.CanStartAction())
-            {
-                return;
-            }
-            string key = pane.NewMode ? pane.Editor.ReadValue(pane.KeyColumn).Trim() : pane.StoredKey;
-            if (key.Length == 0)
-            {
-                this.ShowErrorMessage("Save", "Enter an identifier before saving.", string.Empty);
-                return;
-            }
-            bool isDetail = !this.manageTypes;
-            string parent = isDetail ? this.commonTyp : key;
-            object[] fields = pane.Editor.ToRequestFields();
-            string method = (pane.NewMode ? "Insert" : "Update") + (isDetail ? "CommonCode" : "CommonType");
-            this.RunWrite(pane, () => this.WriteItem(method, parent, isDetail ? key : null, fields), key);
+            if (this.CanQuery) { base.OnSearchClick(sender, e); }
         }
 
-        private void DeleteItem(CodePane pane)
+        private new void OnKeywordEnterPressed(object sender, EventArgs e)
         {
-            if (!this.CanEdit(pane) || pane.NewMode || !this.CanStartAction())
-            {
-                return;
-            }
-            string key = pane.StoredKey;
-            bool isDetail = !this.manageTypes;
-            string parent = isDetail ? this.commonTyp : key;
-            if (!this.Confirm("Delete " + key + "?", "Delete"))
-            {
-                return;
-            }
-            this.RunWrite(pane, () => this.WriteItem(isDetail ? "DeleteCommonCode" : "DeleteCommonType",
-                    parent, isDetail ? key : null, new object[0]), null);
+            if (this.CanQuery) { base.OnKeywordEnterPressed(sender, e); }
         }
 
-        private void RunWrite(CodePane pane, Func<DataActionResult> call, string selectKey)
+        private new async void OnSaveClick(object sender, EventArgs e)
         {
-            this.saving = true;
-            this.UpdateActions();
-            this.RunAction(call, reply =>
-            {
-                this.saving = false;
-                if (selectKey != null)
-                {
-                    pane.Keyword.Text = string.Empty;
-                }
-                this.ShowToast("Changes saved.");
-                this.Reload(pane, selectKey);
-            }, reply =>
-            {
-                this.saving = false;
-                this.UpdateActions();
-                this.ShowActionFailure(reply);
-            }, "Saving common codes…");
+            base.OnSaveClick(sender, e);
+            await this.GuardPendingWriteAsync();
         }
 
-        private void UpdateActions()
+        private new async void OnDeleteClick(object sender, EventArgs e)
         {
-            if (this.editorPane == null)
+            base.OnDeleteClick(sender, e);
+            await this.GuardPendingWriteAsync();
+        }
+
+        protected override void OnActionMenuOpening(object sender, CancelEventArgs e)
+        {
+            base.OnActionMenuOpening(sender, e);
+            if (this.ActionInProgress) { this.LockWriteInputs(); }
+        }
+
+        private void LockWriteInputs()
+        {
+            this.RefreshCrudActionState();
+            this.SyncQueryInputs();
+            this.editorPane.Grid.Enabled = false;
+            this.CrudEditor.Enabled = false;
+        }
+
+        private async Task GuardPendingWriteAsync()
+        {
+            if (!this.ActionInProgress) { return; }
+            this.LockWriteInputs();
+            while (!this.IsDisposed && !this.Disposing && this.ActionInProgress)
             {
-                return;
+                await Task.Delay(25);
             }
-            CodePane pane = this.editorPane;
-            bool editable = this.CanEdit(pane);
-            pane.Editor.Enabled = editable;
-            pane.Grid.Enabled = editable;
-            pane.Keyword.Enabled = !this.saving;
-            pane.Search.Enabled = !this.saving && !this.loadingTypes
+            if (this.IsDisposed || this.Disposing) { return; }
+            this.RefreshCrudActionState();
+            this.SyncQueryInputs();
+            this.editorPane.Grid.Enabled = true;
+        }
+
+        private void SyncQueryInputs()
+        {
+            bool writing = this.ActionInProgress;
+            this.editorPane.Keyword.Enabled = !writing;
+            this.editorPane.Search.Enabled = !writing && !this.loadingTypes
                     && (this.manageTypes || this.SelectedCommonTyp.Length > 0);
-            pane.New.Enabled = editable;
-            pane.Cancel.Enabled = editable && pane.Editor.IsDirty;
-            pane.Save.Enabled = editable && !this.QueryInProgress;
-            pane.Delete.Enabled = editable && !pane.NewMode && !this.QueryInProgress;
-            this.cmbCommonType.Enabled = !this.saving && !this.loadingTypes;
-            this.btnRefreshTypes.Enabled = !this.saving && !this.loadingTypes;
+            this.cmbCommonType.Enabled = !writing && !this.loadingTypes;
+            this.btnRefreshTypes.Enabled = !writing && !this.loadingTypes;
+        }
+
+        protected override void OnListLoading()
+        {
+            this.queryCommonTyp = this.manageTypes ? string.Empty : this.commonTyp;
+            this.ClearEditorPane("Loading…");
+        }
+
+        private void ClearEditorPane(string emptyText)
+        {
+            this.editorPane.Grid.DataSource = null;
+            this.editorPane.Grid.EmptyText = emptyText;
+            this.CrudEditor.SetSchema(new DataTable());
+            this.CrudEditor.BeginNew();
+        }
+
+        protected override IDictionary<string, string> NewItemDefaults()
+        {
+            if (this.manageTypes)
+            {
+                return null;
+            }
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "COMMON_TYP", this.queryCommonTyp }
+            };
+        }
+
+        protected override bool CanStartAction()
+        {
+            if (!this.manageTypes && (this.queryCommonTyp.Length == 0 || this.queryCommonTyp != this.commonTyp
+                    || this.commonTyp != this.SelectedCommonTyp))
+            {
+                return false;
+            }
+            if (!base.CanStartAction())
+            {
+                return false;
+            }
+            this.actionCommonTyp = this.queryCommonTyp;
+            return true;
+        }
+
+        private void OnItemSelectionChanged(object sender, EventArgs e)
+        {
+            if (this.editorPane.Grid.DataSource != null)
+            {
+                this.editorPane.Grid.EmptyText = "No matching items.";
+            }
+            if (this.bindingSelection) { return; }
+            if (this.ActionInProgress)
+            {
+                this.bindingSelection = true;
+                this.editorPane.Grid.SelectedIndex = this.selectedIndex;
+                this.bindingSelection = false;
+                return;
+            }
+            this.selectedIndex = this.editorPane.Grid.SelectedIndex;
+            this.HandleSelectionChanged();
+        }
+
+        private DataActionResult PrepareSavedItemReload(DataActionResult reply)
+        {
+            if (reply.Success && !this.IsDisposed && this.IsHandleCreated)
+            {
+                this.Invoke(new Action(() => this.editorPane.Keyword.Text = string.Empty));
+            }
+            return reply;
         }
 
         private string SelectedCommonTyp
@@ -317,9 +249,9 @@ namespace Modern.Lab.MasterData
         private void InvalidateCodes()
         {
             this.commonTyp = string.Empty;
-            this.InvalidateChannel(this.editorPane.Channel);
-            this.ClearPane(this.editorPane, ListState.NoParent);
-            this.UpdateActions();
+            this.CloseItems();
+            this.ClearEditorPane("Select a saved common type.");
+            this.SyncQueryInputs();
         }
 
         private void OnCommonTypeTextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -329,7 +261,7 @@ namespace Modern.Lab.MasterData
 
         private void OnCommonTypeChanged(object sender, EventArgs e)
         {
-            if (this.bindingTypes || this.loadingTypes || this.saving)
+            if (this.bindingTypes || this.loadingTypes || this.ActionInProgress)
             {
                 return;
             }
@@ -347,7 +279,7 @@ namespace Modern.Lab.MasterData
             this.PostToUi(() =>
             {
                 this.typeSelectionQueued = false;
-                if (this.loadingTypes || this.saving)
+                if (this.loadingTypes || this.ActionInProgress)
                 {
                     return;
                 }
@@ -359,13 +291,17 @@ namespace Modern.Lab.MasterData
                 }
                 this.commonTyp = selected;
                 this.editorPane.Keyword.Text = string.Empty;
-                this.Reload(this.editorPane, null);
+                this.SyncQueryInputs();
+                if (this.CanQuery)
+                {
+                    this.ReloadItems();
+                }
             });
         }
 
         private void LoadTypes(bool selectFirst)
         {
-            if (this.saving || this.loadingTypes)
+            if (this.ActionInProgress || this.loadingTypes)
             {
                 return;
             }
@@ -378,7 +314,7 @@ namespace Modern.Lab.MasterData
             this.InvalidateCodes();
             this.editorPane.Grid.EmptyText = "Loading common types…";
             bool applied = false;
-            this.LoadAsync("types", () => this.SelectItems(false, string.Empty, string.Empty), table =>
+            this.LoadAsync(TypesChannel, () => this.SelectItems(false, string.Empty, string.Empty), table =>
             {
                 DataTable choices = new DataTable();
                 choices.Columns.Add("COMMON_TYP");
@@ -421,12 +357,16 @@ namespace Modern.Lab.MasterData
                 {
                     this.QueueTypeSelection();
                 }
-                this.PostToUi(this.UpdateActions);
+                this.PostToUi(this.SyncQueryInputs);
             });
         }
 
         protected override void OnLoadFailed(string channel, Exception failure)
         {
+            if (channel != TypesChannel)
+            {
+                this.editorPane.Grid.EmptyText = "Could not load items. Search to retry.";
+            }
             if (failure is ResponseContractException && !this.LoadFailureSilent)
             {
                 this.ShowErrorMessage(this.QueryFailedCaption, ResponseColumns.MissingMessage, failure.Message);
@@ -434,6 +374,7 @@ namespace Modern.Lab.MasterData
             }
             base.OnLoadFailed(channel, failure);
         }
+
         private static readonly string[] MasterColumns =
         {
             "COMMON_TYP", "COMMON_NM", "DESCRIPTION", "SORT_NO", "USE_YN", "UPDATED_BY", "UPDATED_AT"
@@ -442,6 +383,11 @@ namespace Modern.Lab.MasterData
         {
             "COMMON_TYP", "TYP_VAL", "TYP_NM", "DESCRIPTION", "SORT_NO", "USE_YN", "UPDATED_BY", "UPDATED_AT"
         };
+
+        protected override DataTable RequestItems(string keyword)
+        {
+            return this.SelectItems(!this.manageTypes, this.queryCommonTyp, keyword);
+        }
 
         private DataTable SelectItems(bool isDetail, string commonTyp, string keyword)
         {
@@ -463,6 +409,52 @@ namespace Modern.Lab.MasterData
                 }
             }
             return table;
+        }
+
+        protected override string[] ReadKeyValues()
+        {
+            if (this.manageTypes && !this.CrudEditor.IsNew)
+            {
+                return new string[] { this.CrudEditor.ReadValue(TypeKeyColumn) };
+            }
+            return base.ReadKeyValues();
+        }
+
+        protected override string[] SavedItemKey(DataActionResult reply, string[] savedKey, bool isNew)
+        {
+            if (this.manageTypes && !isNew)
+            {
+                return savedKey;
+            }
+            return base.SavedItemKey(reply, savedKey, isNew);
+        }
+
+        protected override DataActionResult InsertItem(object[] requestFields)
+        {
+            return this.PrepareSavedItemReload(this.WriteEditedItem("Insert", requestFields, true));
+        }
+
+        protected override DataActionResult UpdateItem(object[] requestFields)
+        {
+            return this.PrepareSavedItemReload(this.WriteEditedItem("Update", requestFields, false));
+        }
+
+        private DataActionResult WriteEditedItem(string verb, object[] fields, bool isNew)
+        {
+            if (this.manageTypes)
+            {
+                return this.WriteItem(verb + "CommonType", KeyText(fields, "CommonTyp", isNew), null, fields);
+            }
+            return this.WriteItem(verb + "CommonCode", this.actionCommonTyp, KeyText(fields, "TypVal", isNew), fields);
+        }
+
+        protected override DataActionResult DeleteItem(string[] keyValues)
+        {
+            if (this.manageTypes)
+            {
+                return this.WriteItem("DeleteCommonType", keyValues[0], null, new object[0]);
+            }
+            return this.WriteItem("DeleteCommonCode", this.actionCommonTyp, keyValues[1], new object[0]);
         }
     }
 }
