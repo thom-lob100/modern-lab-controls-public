@@ -10,7 +10,9 @@ using Modern.Lab.Hosting.ResponseContracts;
 
 namespace Modern.Lab.Hosting.MasterData
 {
-    public abstract class MasterDataCrudFormBase : ModernFormBase
+    /// <summary>기준정보 CRUD 폼의 공통 베이스. VS 디자이너가 파생 폼을 열 때 이 타입의 인스턴스를 만들므로
+    /// <c>abstract</c>로 두지 않는다 — 화면이 채울 전문은 가상 메서드이고 기본 구현은 예외를 던진다.</summary>
+    public class MasterDataCrudFormBase : ModernFormBase
     {
         private const string ChannelList = "list";
 
@@ -545,13 +547,25 @@ namespace Modern.Lab.Hosting.MasterData
         /// <summary>목록 조회 전문 — 화면의 <c>.Server.cs</c>가 정의한다(★ 교체 지점). <paramref name="keyword"/>는
         /// 조회 카드에 <c>txtKeyword</c>가 있을 때 그 값이다. <b>백그라운드 스레드에서 불린다</b> — 조건이 다른 화면은
         /// 컨트롤을 여기서 읽지 말고 UI 스레드에서 도는 <see cref="OnListLoading"/>에서 필드에 담아 둔 뒤 그 값을 쓴다.</summary>
-        protected abstract DataTable RequestItems(string keyword);
+        protected virtual DataTable RequestItems(string keyword)
+        {
+            throw new InvalidOperationException(
+                    "조회 전문이 없다 — 화면의 .Server.cs 에서 RequestItems 를 재정의할 것.");
+        }
 
         /// <summary>등록 전문 — <paramref name="requestFields"/>는 편집기 컬럼 전부의 이름/값 쌍(자동 생성).</summary>
-        protected abstract DataActionResult InsertItem(object[] requestFields);
+        protected virtual DataActionResult InsertItem(object[] requestFields)
+        {
+            throw new InvalidOperationException(
+                    "등록 전문이 없다 — 화면의 .Server.cs 에서 InsertItem 을 재정의할 것.");
+        }
 
         /// <summary>수정 전문 — <paramref name="requestFields"/>는 편집기 컬럼 전부의 이름/값 쌍(자동 생성).</summary>
-        protected abstract DataActionResult UpdateItem(object[] requestFields);
+        protected virtual DataActionResult UpdateItem(object[] requestFields)
+        {
+            throw new InvalidOperationException(
+                    "수정 전문이 없다 — 화면의 .Server.cs 에서 UpdateItem 을 재정의할 것.");
+        }
 
         /// <summary>단일 키 삭제 전문 — <paramref name="key"/>는 편집기의 키 값. 단일 키 화면이 재정의한다.</summary>
         protected virtual DataActionResult DeleteItem(string key)

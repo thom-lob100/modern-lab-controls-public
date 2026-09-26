@@ -29,6 +29,7 @@ namespace Modern.Lab.MasterData
         {
             this.manageTypes = manageTypes;
             this.InitializeComponent();
+            this.ApplyScreenMode();
             this.InitializeCrud(this.CreateDefinition());
             this.DefineEditors();
             if (!this.manageTypes)
@@ -39,8 +40,20 @@ namespace Modern.Lab.MasterData
                 this.cmbCommonType.Child.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent,
                         this.typeTextChanged, true);
             }
-            this.Load += this.OnCommonCodeLoad;
             this.SyncQueryInputs();
+        }
+
+        private void ApplyScreenMode()
+        {
+            if (!this.manageTypes)
+            {
+                return;
+            }
+            this.Text = "Common Type Master";
+            this.lblTitle.Text = "Common Type Master — Session demo - changes reset on restart";
+            this.typeBar.Visible = false;
+            this.listCard.Text = "Common Type List";
+            this.editorCard.Text = "Common Type";
         }
 
         protected override void Dispose(bool disposing)
@@ -117,8 +130,8 @@ namespace Modern.Lab.MasterData
         private void SyncQueryInputs()
         {
             bool writing = this.ActionInProgress;
-            this.editorPane.Keyword.Enabled = !writing;
-            this.editorPane.Search.Enabled = !writing && !this.loadingTypes
+            this.txtKeyword.Enabled = !writing;
+            this.btnSearch.Enabled = !writing && !this.loadingTypes
                     && (this.manageTypes || this.SelectedCommonTyp.Length > 0);
             this.cmbCommonType.Enabled = !writing && !this.loadingTypes;
             this.btnRefreshTypes.Enabled = !writing && !this.loadingTypes;
@@ -132,8 +145,8 @@ namespace Modern.Lab.MasterData
 
         private void ClearEditorPane(string emptyText)
         {
-            this.editorPane.Grid.DataSource = null;
-            this.editorPane.Grid.EmptyText = emptyText;
+            this.gridItems.DataSource = null;
+            this.gridItems.EmptyText = emptyText;
             this.CrudEditor.SetSchema(new DataTable());
             this.CrudEditor.BeginNew();
         }
@@ -167,9 +180,9 @@ namespace Modern.Lab.MasterData
 
         private void OnItemSelectionChanged(object sender, EventArgs e)
         {
-            if (this.editorPane.Grid.DataSource != null)
+            if (this.gridItems.DataSource != null)
             {
-                this.editorPane.Grid.EmptyText = "No matching items.";
+                this.gridItems.EmptyText = "No matching items.";
             }
             this.HandleSelectionChanged();
         }
@@ -178,7 +191,7 @@ namespace Modern.Lab.MasterData
         {
             if (reply.Success && !this.IsDisposed && this.IsHandleCreated)
             {
-                this.Invoke(new Action(() => this.editorPane.Keyword.Text = string.Empty));
+                this.Invoke(new Action(() => this.txtKeyword.Text = string.Empty));
             }
             return reply;
         }
@@ -242,7 +255,7 @@ namespace Modern.Lab.MasterData
                     return;
                 }
                 this.commonTyp = selected;
-                this.editorPane.Keyword.Text = string.Empty;
+                this.txtKeyword.Text = string.Empty;
                 this.SyncQueryInputs();
                 if (this.CanQuery)
                 {
@@ -264,7 +277,7 @@ namespace Modern.Lab.MasterData
             this.cmbCommonType.Text = string.Empty;
             this.bindingTypes = false;
             this.InvalidateCodes();
-            this.editorPane.Grid.EmptyText = "Loading common types…";
+            this.gridItems.EmptyText = "Loading common types…";
             bool applied = false;
             this.LoadAsync(TypesChannel, () => this.SelectItems(false, string.Empty, string.Empty), table =>
             {
@@ -303,7 +316,7 @@ namespace Modern.Lab.MasterData
                     return;
                 }
                 this.loadingTypes = false;
-                this.editorPane.Grid.EmptyText = applied ? "Select a saved common type."
+                this.gridItems.EmptyText = applied ? "Select a saved common type."
                         : "Could not load common types. Click Refresh Types to retry.";
                 if (applied)
                 {
@@ -317,7 +330,7 @@ namespace Modern.Lab.MasterData
         {
             if (channel != TypesChannel)
             {
-                this.editorPane.Grid.EmptyText = "Could not load items. Search to retry.";
+                this.gridItems.EmptyText = "Could not load items. Search to retry.";
             }
             if (failure is ResponseContractException && !this.LoadFailureSilent)
             {

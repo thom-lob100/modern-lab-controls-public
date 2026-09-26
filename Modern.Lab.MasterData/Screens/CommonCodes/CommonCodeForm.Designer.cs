@@ -1,181 +1,307 @@
-using System.Data;
-using System.Drawing;
-using System.Windows.Forms;
-
-using Modern.Lab.Controls.Wpf.Display;
-using Modern.Lab.Controls.Wpf.Input;
-using Modern.Lab.Hosting.MasterData;
-using Modern.Lab.WinForms.Controls.Data;
-using Modern.Lab.WinForms.Controls.Display;
-using Modern.Lab.WinForms.Controls.Input;
-using Modern.Lab.WinForms.Controls.Layout;
-using Modern.Lab.WinForms.Controls.Selection;
-
 namespace Modern.Lab.MasterData
 {
     public partial class CommonCodeForm
     {
-        private System.ComponentModel.IContainer components;
-        private CodePane editorPane;
-        private ModernComboBox cmbCommonType;
-        private ModernButton btnRefreshTypes;
-        private ModernLabel lblTitle;
-        private ContextMenuStrip menuActions;
-        private ToolStripMenuItem miNew;
-        private ToolStripMenuItem miCancel;
-        private ToolStripMenuItem miSave;
-        private ToolStripSeparator sepDelete;
-        private ToolStripMenuItem miDelete;
+        private System.ComponentModel.IContainer components = null;
+
+        private Modern.Lab.WinForms.Controls.Display.ModernLabel lblTitle;
+        private Modern.Lab.WinForms.Controls.Layout.ModernCardPanel typeBar;
+        private Modern.Lab.WinForms.Controls.Display.ModernLabel lblCommonType;
+        private Modern.Lab.WinForms.Controls.Selection.ModernComboBox cmbCommonType;
+        private Modern.Lab.WinForms.Controls.Input.ModernButton btnRefreshTypes;
+        private System.Windows.Forms.Panel contentPanel;
+        private Modern.Lab.WinForms.Controls.Layout.ModernCardPanel searchCard;
+        private Modern.Lab.WinForms.Controls.Display.ModernLabel lblKeyword;
+        private Modern.Lab.WinForms.Controls.Input.ModernTextBox txtKeyword;
+        private Modern.Lab.WinForms.Controls.Input.ModernButton btnSearch;
+        private System.Windows.Forms.Panel gapSearch;
+        private Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer splitMain;
+        private Modern.Lab.WinForms.Controls.Layout.ModernGroupBox listCard;
+        private Modern.Lab.WinForms.Controls.Data.ModernDataGrid gridItems;
+        private Modern.Lab.WinForms.Controls.Layout.ModernGroupBox editorCard;
+        private Modern.Lab.Hosting.MasterData.ModernPropertyGrid propertyGrid;
+        private System.Windows.Forms.FlowLayoutPanel actionPanel;
+        private Modern.Lab.WinForms.Controls.Input.ModernButton btnDelete;
+        private Modern.Lab.WinForms.Controls.Input.ModernButton btnSave;
+        private Modern.Lab.WinForms.Controls.Input.ModernButton btnCancel;
+        private Modern.Lab.WinForms.Controls.Input.ModernButton btnNew;
+        private System.Windows.Forms.ContextMenuStrip menuActions;
+        private System.Windows.Forms.ToolStripMenuItem miNew;
+        private System.Windows.Forms.ToolStripMenuItem miCancel;
+        private System.Windows.Forms.ToolStripMenuItem miSave;
+        private System.Windows.Forms.ToolStripSeparator sepDelete;
+        private System.Windows.Forms.ToolStripMenuItem miDelete;
+
+        #region Windows Form Designer generated code
 
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            this.lblTitle = new Modern.Lab.WinForms.Controls.Display.ModernLabel();
+            this.typeBar = new Modern.Lab.WinForms.Controls.Layout.ModernCardPanel();
+            this.lblCommonType = new Modern.Lab.WinForms.Controls.Display.ModernLabel();
+            this.cmbCommonType = new Modern.Lab.WinForms.Controls.Selection.ModernComboBox();
+            this.btnRefreshTypes = new Modern.Lab.WinForms.Controls.Input.ModernButton();
+            this.contentPanel = new System.Windows.Forms.Panel();
+            this.searchCard = new Modern.Lab.WinForms.Controls.Layout.ModernCardPanel();
+            this.lblKeyword = new Modern.Lab.WinForms.Controls.Display.ModernLabel();
+            this.txtKeyword = new Modern.Lab.WinForms.Controls.Input.ModernTextBox();
+            this.btnSearch = new Modern.Lab.WinForms.Controls.Input.ModernButton();
+            this.gapSearch = new System.Windows.Forms.Panel();
+            this.splitMain = new Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer();
+            this.listCard = new Modern.Lab.WinForms.Controls.Layout.ModernGroupBox();
+            this.gridItems = new Modern.Lab.WinForms.Controls.Data.ModernDataGrid();
+            this.editorCard = new Modern.Lab.WinForms.Controls.Layout.ModernGroupBox();
+            this.propertyGrid = new Modern.Lab.Hosting.MasterData.ModernPropertyGrid();
+            this.actionPanel = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnDelete = new Modern.Lab.WinForms.Controls.Input.ModernButton();
+            this.btnSave = new Modern.Lab.WinForms.Controls.Input.ModernButton();
+            this.btnCancel = new Modern.Lab.WinForms.Controls.Input.ModernButton();
+            this.btnNew = new Modern.Lab.WinForms.Controls.Input.ModernButton();
+            this.menuActions = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.miNew = new System.Windows.Forms.ToolStripMenuItem();
+            this.miCancel = new System.Windows.Forms.ToolStripMenuItem();
+            this.miSave = new System.Windows.Forms.ToolStripMenuItem();
+            this.sepDelete = new System.Windows.Forms.ToolStripSeparator();
+            this.miDelete = new System.Windows.Forms.ToolStripMenuItem();
+            this.typeBar.SuspendLayout();
+            this.contentPanel.SuspendLayout();
+            this.searchCard.SuspendLayout();
+            this.splitMain.Panel1.SuspendLayout();
+            this.splitMain.Panel2.SuspendLayout();
+            this.splitMain.SuspendLayout();
+            this.listCard.SuspendLayout();
+            this.editorCard.SuspendLayout();
+            this.actionPanel.SuspendLayout();
+            this.menuActions.SuspendLayout();
             this.SuspendLayout();
-            string title = this.manageTypes ? "Common Type Master" : "Common Code Master";
-            this.editorPane = CreatePane(this.manageTypes ? "Common Type" : "Common Code");
-            this.editorPane.Keyword.EnterPressed += new System.EventHandler(this.OnKeywordEnterPressed);
-            this.editorPane.Search.Click += new System.EventHandler(this.OnSearchClick);
-            this.editorPane.Grid.SelectionChanged += new System.EventHandler(this.OnItemSelectionChanged);
-            this.editorPane.New.Click += new System.EventHandler(this.OnNewClick);
-            this.editorPane.Cancel.Click += new System.EventHandler(this.OnCancelClick);
-            this.editorPane.Save.Click += new System.EventHandler(this.OnSaveClick);
-            this.editorPane.Delete.Click += new System.EventHandler(this.OnDeleteClick);
-            this.menuActions = new ContextMenuStrip(this.components) { Name = "menuActions" };
-            this.miNew = new ToolStripMenuItem { Name = "miNew", Text = "New" };
-            this.miCancel = new ToolStripMenuItem { Name = "miCancel", Text = "Cancel" };
-            this.miSave = new ToolStripMenuItem { Name = "miSave", Text = "Save" };
-            this.sepDelete = new ToolStripSeparator { Name = "sepDelete" };
-            this.miDelete = new ToolStripMenuItem { Name = "miDelete", Text = "Delete" };
-            this.menuActions.Items.AddRange(new ToolStripItem[] { this.miNew, this.miCancel, this.miSave, this.sepDelete, this.miDelete });
+            this.lblTitle.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblTitle.Kind = Modern.Lab.Controls.Wpf.Display.LabelKind.Title;
+            this.lblTitle.Location = new System.Drawing.Point(12, 12);
+            this.lblTitle.Name = "lblTitle";
+            this.lblTitle.Size = new System.Drawing.Size(1376, 40);
+            this.lblTitle.TabIndex = 2;
+            this.lblTitle.Text = "Common Code Master — Session demo - changes reset on restart";
+            this.lblTitle.TitleBar = true;
+            this.typeBar.Controls.Add(this.lblCommonType);
+            this.typeBar.Controls.Add(this.cmbCommonType);
+            this.typeBar.Controls.Add(this.btnRefreshTypes);
+            this.typeBar.Dock = System.Windows.Forms.DockStyle.Top;
+            this.typeBar.Location = new System.Drawing.Point(12, 52);
+            this.typeBar.Name = "typeBar";
+            this.typeBar.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
+            this.typeBar.Size = new System.Drawing.Size(1376, 56);
+            this.typeBar.TabIndex = 1;
+            this.lblCommonType.Kind = Modern.Lab.Controls.Wpf.Display.LabelKind.Label;
+            this.lblCommonType.Location = new System.Drawing.Point(12, 12);
+            this.lblCommonType.Name = "lblCommonType";
+            this.lblCommonType.Size = new System.Drawing.Size(112, 32);
+            this.lblCommonType.TabIndex = 0;
+            this.lblCommonType.Text = "Common Type";
+            this.cmbCommonType.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
+            this.cmbCommonType.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbCommonType.DisplayMember = "DISPLAY_NAME";
+            this.cmbCommonType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
+            this.cmbCommonType.Location = new System.Drawing.Point(128, 12);
+            this.cmbCommonType.Name = "cmbCommonType";
+            this.cmbCommonType.PlaceholderText = "Type a common type or name";
+            this.cmbCommonType.Required = true;
+            this.cmbCommonType.Size = new System.Drawing.Size(450, 32);
+            this.cmbCommonType.TabIndex = 1;
+            this.cmbCommonType.ValueMember = "COMMON_TYP";
+            this.btnRefreshTypes.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Secondary;
+            this.btnRefreshTypes.Location = new System.Drawing.Point(590, 12);
+            this.btnRefreshTypes.Name = "btnRefreshTypes";
+            this.btnRefreshTypes.Size = new System.Drawing.Size(136, 32);
+            this.btnRefreshTypes.TabIndex = 2;
+            this.btnRefreshTypes.Text = "Refresh Types";
+            this.contentPanel.Controls.Add(this.splitMain);
+            this.contentPanel.Controls.Add(this.gapSearch);
+            this.contentPanel.Controls.Add(this.searchCard);
+            this.contentPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.contentPanel.Location = new System.Drawing.Point(12, 108);
+            this.contentPanel.Name = "contentPanel";
+            this.contentPanel.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.contentPanel.Size = new System.Drawing.Size(1376, 680);
+            this.contentPanel.TabIndex = 0;
+            this.searchCard.Controls.Add(this.lblKeyword);
+            this.searchCard.Controls.Add(this.txtKeyword);
+            this.searchCard.Controls.Add(this.btnSearch);
+            this.searchCard.Dock = System.Windows.Forms.DockStyle.Top;
+            this.searchCard.Location = new System.Drawing.Point(0, 8);
+            this.searchCard.Name = "searchCard";
+            this.searchCard.Size = new System.Drawing.Size(1376, 56);
+            this.searchCard.TabIndex = 2;
+            this.lblKeyword.Kind = Modern.Lab.Controls.Wpf.Display.LabelKind.Label;
+            this.lblKeyword.Location = new System.Drawing.Point(12, 12);
+            this.lblKeyword.Name = "lblKeyword";
+            this.lblKeyword.Size = new System.Drawing.Size(72, 32);
+            this.lblKeyword.TabIndex = 0;
+            this.lblKeyword.Text = "Keyword";
+            this.txtKeyword.Location = new System.Drawing.Point(88, 12);
+            this.txtKeyword.Name = "txtKeyword";
+            this.txtKeyword.PlaceholderText = "Identifier or keyword";
+            this.txtKeyword.ShowClearButton = true;
+            this.txtKeyword.Size = new System.Drawing.Size(280, 32);
+            this.txtKeyword.TabIndex = 1;
+            this.txtKeyword.EnterPressed += new System.EventHandler(this.OnKeywordEnterPressed);
+            this.btnSearch.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Primary;
+            this.btnSearch.Location = new System.Drawing.Point(376, 12);
+            this.btnSearch.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.btnSearch.Name = "btnSearch";
+            this.btnSearch.Size = new System.Drawing.Size(104, 32);
+            this.btnSearch.TabIndex = 2;
+            this.btnSearch.Text = "Search";
+            this.btnSearch.Click += new System.EventHandler(this.OnSearchClick);
+            this.gapSearch.Dock = System.Windows.Forms.DockStyle.Top;
+            this.gapSearch.Location = new System.Drawing.Point(0, 64);
+            this.gapSearch.Name = "gapSearch";
+            this.gapSearch.Size = new System.Drawing.Size(1376, 8);
+            this.gapSearch.TabIndex = 1;
+            this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitMain.KeepRatio = true;
+            this.splitMain.Location = new System.Drawing.Point(0, 72);
+            this.splitMain.Name = "splitMain";
+            this.splitMain.Panel1.Controls.Add(this.listCard);
+            this.splitMain.Panel2.Controls.Add(this.editorCard);
+            this.splitMain.Size = new System.Drawing.Size(1376, 608);
+            this.splitMain.Panel2MinSize = 470;
+            this.splitMain.SplitterDistance = 820;
+            this.splitMain.SplitterWidth = 8;
+            this.splitMain.TabIndex = 0;
+            this.listCard.Controls.Add(this.gridItems);
+            this.listCard.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.listCard.Location = new System.Drawing.Point(0, 0);
+            this.listCard.Name = "listCard";
+            this.listCard.Padding = new System.Windows.Forms.Padding(6, 40, 6, 6);
+            this.listCard.Size = new System.Drawing.Size(820, 608);
+            this.listCard.TabIndex = 0;
+            this.listCard.Text = "Common Code List";
+            this.listCard.TitleBar = true;
+            this.gridItems.AutoFitColumns = true;
+            this.gridItems.ContextMenuStrip = this.menuActions;
+            this.gridItems.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gridItems.Location = new System.Drawing.Point(6, 40);
+            this.gridItems.Name = "gridItems";
+            this.gridItems.ReadOnly = true;
+            this.gridItems.ShowStatusBar = true;
+            this.gridItems.Size = new System.Drawing.Size(808, 562);
+            this.gridItems.StatusCountFormat = "{0:N0} items";
+            this.gridItems.TabIndex = 0;
+            this.gridItems.SelectionChanged += new System.EventHandler(this.OnItemSelectionChanged);
+            this.editorCard.Controls.Add(this.propertyGrid);
+            this.editorCard.Controls.Add(this.actionPanel);
+            this.editorCard.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.editorCard.Location = new System.Drawing.Point(0, 0);
+            this.editorCard.Name = "editorCard";
+            this.editorCard.Padding = new System.Windows.Forms.Padding(12, 44, 12, 8);
+            this.editorCard.Size = new System.Drawing.Size(548, 608);
+            this.editorCard.TabIndex = 0;
+            this.editorCard.Text = "Common Code";
+            this.editorCard.TitleBar = true;
+            this.propertyGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.propertyGrid.LabelWidth = 150;
+            this.propertyGrid.Location = new System.Drawing.Point(12, 44);
+            this.propertyGrid.Name = "propertyGrid";
+            this.propertyGrid.Size = new System.Drawing.Size(524, 506);
+            this.propertyGrid.TabIndex = 0;
+            this.actionPanel.Controls.Add(this.btnDelete);
+            this.actionPanel.Controls.Add(this.btnSave);
+            this.actionPanel.Controls.Add(this.btnCancel);
+            this.actionPanel.Controls.Add(this.btnNew);
+            this.actionPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.actionPanel.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.actionPanel.Location = new System.Drawing.Point(12, 550);
+            this.actionPanel.Margin = new System.Windows.Forms.Padding(0);
+            this.actionPanel.Name = "actionPanel";
+            this.actionPanel.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.actionPanel.Size = new System.Drawing.Size(524, 50);
+            this.actionPanel.TabIndex = 1;
+            this.actionPanel.WrapContents = false;
+            this.btnDelete.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Danger;
+            this.btnDelete.Location = new System.Drawing.Point(424, 8);
+            this.btnDelete.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.btnDelete.Name = "btnDelete";
+            this.btnDelete.Size = new System.Drawing.Size(100, 34);
+            this.btnDelete.TabIndex = 3;
+            this.btnDelete.Text = "Delete";
+            this.btnDelete.Click += new System.EventHandler(this.OnDeleteClick);
+            this.btnSave.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Execute;
+            this.btnSave.Location = new System.Drawing.Point(316, 8);
+            this.btnSave.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(100, 34);
+            this.btnSave.TabIndex = 2;
+            this.btnSave.Text = "Save";
+            this.btnSave.Click += new System.EventHandler(this.OnSaveClick);
+            this.btnCancel.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Secondary;
+            this.btnCancel.Location = new System.Drawing.Point(208, 8);
+            this.btnCancel.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.btnCancel.Name = "btnCancel";
+            this.btnCancel.Size = new System.Drawing.Size(100, 34);
+            this.btnCancel.TabIndex = 1;
+            this.btnCancel.Text = "Cancel";
+            this.btnCancel.Click += new System.EventHandler(this.OnCancelClick);
+            this.btnNew.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Secondary;
+            this.btnNew.Location = new System.Drawing.Point(100, 8);
+            this.btnNew.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.btnNew.Name = "btnNew";
+            this.btnNew.Size = new System.Drawing.Size(100, 34);
+            this.btnNew.TabIndex = 0;
+            this.btnNew.Text = "New";
+            this.btnNew.Click += new System.EventHandler(this.OnNewClick);
+            this.menuActions.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.miNew,
+            this.miCancel,
+            this.miSave,
+            this.sepDelete,
+            this.miDelete});
+            this.menuActions.Name = "menuActions";
+            this.menuActions.Size = new System.Drawing.Size(153, 98);
             this.menuActions.Opening += new System.ComponentModel.CancelEventHandler(this.OnActionMenuOpening);
+            this.miNew.Name = "miNew";
+            this.miNew.Size = new System.Drawing.Size(152, 22);
+            this.miNew.Text = "New";
             this.miNew.Click += new System.EventHandler(this.OnNewClick);
+            this.miCancel.Name = "miCancel";
+            this.miCancel.Size = new System.Drawing.Size(152, 22);
+            this.miCancel.Text = "Cancel";
             this.miCancel.Click += new System.EventHandler(this.OnCancelClick);
+            this.miSave.Name = "miSave";
+            this.miSave.Size = new System.Drawing.Size(152, 22);
+            this.miSave.Text = "Save";
             this.miSave.Click += new System.EventHandler(this.OnSaveClick);
+            this.sepDelete.Name = "sepDelete";
+            this.sepDelete.Size = new System.Drawing.Size(149, 6);
+            this.miDelete.Name = "miDelete";
+            this.miDelete.Size = new System.Drawing.Size(152, 22);
+            this.miDelete.Text = "Delete";
             this.miDelete.Click += new System.EventHandler(this.OnDeleteClick);
-            this.editorPane.Grid.ContextMenuStrip = this.menuActions;
-            this.lblTitle = new ModernLabel
-            {
-                Dock = DockStyle.Top, Height = 40, Kind = LabelKind.Title, TitleBar = true,
-                Text = title + " — Session demo - changes reset on restart"
-            };
-            ModernCardPanel typeBar = new ModernCardPanel
-            {
-                Dock = DockStyle.Top, Height = 56, Visible = !this.manageTypes, Padding = new Padding(12, 8, 12, 8)
-            };
-            ModernLabel typeLabel = new ModernLabel
-            {
-                Text = "Common Type", Location = new Point(12, 12), Size = new Size(112, 32), Kind = LabelKind.Label
-            };
-            this.cmbCommonType = new ModernComboBox
-            {
-                Name = "cmbCommonType", Location = new Point(128, 12), Size = new Size(450, 32),
-                DropDownStyle = ComboBoxStyle.DropDown, AutoCompleteMode = AutoCompleteMode.Suggest,
-                AutoCompleteSource = AutoCompleteSource.ListItems, DisplayMember = "DISPLAY_NAME", ValueMember = "COMMON_TYP",
-                PlaceholderText = "Type a common type or name", Required = true
-            };
-            this.btnRefreshTypes = new ModernButton
-            {
-                Name = "btnRefreshTypes", Text = "Refresh Types", Kind = ButtonKind.Secondary,
-                Location = new Point(590, 12), Size = new Size(136, 32)
-            };
-            typeBar.Controls.AddRange(new Control[] { typeLabel, this.cmbCommonType, this.btnRefreshTypes });
-            this.AutoScaleDimensions = new SizeF(7F, 15F);
-            this.AutoScaleMode = AutoScaleMode.Font;
-            this.ClientSize = new Size(1400, 800);
-            this.MinimumSize = new Size(1000, 650);
-            this.Padding = new Padding(12);
-            this.Text = title;
-            this.Name = "CommonCodeForm";
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.Controls.Add(this.editorPane.Root);
-            this.Controls.Add(typeBar);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(1400, 800);
+            this.Controls.Add(this.contentPanel);
+            this.Controls.Add(this.typeBar);
             this.Controls.Add(this.lblTitle);
+            this.MinimumSize = new System.Drawing.Size(1000, 650);
+            this.Name = "CommonCodeForm";
+            this.Padding = new System.Windows.Forms.Padding(12);
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "Common Code Master";
+            this.Load += new System.EventHandler(this.OnCommonCodeLoad);
+            this.typeBar.ResumeLayout(false);
+            this.contentPanel.ResumeLayout(false);
+            this.searchCard.ResumeLayout(false);
+            this.splitMain.Panel1.ResumeLayout(false);
+            this.splitMain.Panel2.ResumeLayout(false);
+            this.splitMain.ResumeLayout(false);
+            this.listCard.ResumeLayout(false);
+            this.editorCard.ResumeLayout(false);
+            this.actionPanel.ResumeLayout(false);
+            this.menuActions.ResumeLayout(false);
             this.ResumeLayout(false);
         }
 
-        private static CodePane CreatePane(string title)
-        {
-            CodePane pane = new CodePane();
-            pane.Root = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 8, 0, 0) };
-            ModernCardPanel search = new ModernCardPanel { Dock = DockStyle.Top, Height = 56 };
-            ModernLabel keywordLabel = new ModernLabel
-            {
-                Text = "Keyword", Location = new Point(12, 12), Size = new Size(72, 32), Kind = LabelKind.Label
-            };
-            pane.Keyword = new ModernTextBox
-            {
-                Name = "txtKeyword", Location = new Point(88, 12), Size = new Size(280, 32),
-                PlaceholderText = "Identifier or keyword", ShowClearButton = true
-            };
-            pane.Search = CreateButton("btnSearch", "Search", ButtonKind.Primary);
-            pane.Search.Location = new Point(376, 12);
-            pane.Search.Size = new Size(104, 32);
-            search.Controls.AddRange(new Control[] { keywordLabel, pane.Keyword, pane.Search });
-            ModernSplitContainer split = new ModernSplitContainer
-            {
-                Dock = DockStyle.Fill, Size = new Size(1376, 620), KeepRatio = true,
-                SplitterWidth = 8, SplitterDistance = 820, Panel2MinSize = 470
-            };
-            ModernGroupBox listCard = new ModernGroupBox
-            {
-                Text = title + " List", Dock = DockStyle.Fill, Padding = new Padding(6, 40, 6, 6), TitleBar = true
-            };
-            pane.Grid = new ModernDataGrid
-            {
-                Name = "gridItems", Dock = DockStyle.Fill, ReadOnly = true, AutoFitColumns = true,
-                ShowStatusBar = true, StatusCountFormat = "{0:N0} items"
-            };
-            listCard.Controls.Add(pane.Grid);
-            pane.Card = new ModernGroupBox
-            {
-                Name = "editorCard", Text = title, Dock = DockStyle.Fill, Padding = new Padding(12, 44, 12, 8), TitleBar = true
-            };
-            pane.Editor = new ModernPropertyGrid
-            {
-                Name = "propertyGrid", Dock = DockStyle.Fill, LabelWidth = 150, TabIndex = 0
-            };
-            FlowLayoutPanel actions = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Bottom, Height = 50, FlowDirection = FlowDirection.RightToLeft, WrapContents = false,
-                Padding = new Padding(0, 8, 0, 0), Margin = new Padding(0), TabIndex = 1
-            };
-            pane.New = CreateButton("btnNew", "New", ButtonKind.Secondary);
-            pane.Cancel = CreateButton("btnCancel", "Cancel", ButtonKind.Secondary);
-            pane.Save = CreateButton("btnSave", "Save", ButtonKind.Execute);
-            pane.Delete = CreateButton("btnDelete", "Delete", ButtonKind.Danger);
-            pane.New.TabIndex = 0;
-            pane.Cancel.TabIndex = 1;
-            pane.Save.TabIndex = 2;
-            pane.Delete.TabIndex = 3;
-            actions.Controls.AddRange(new Control[] { pane.Delete, pane.Save, pane.Cancel, pane.New });
-            pane.Card.Controls.Add(pane.Editor);
-            pane.Card.Controls.Add(actions);
-            split.Panel1.Controls.Add(listCard);
-            split.Panel2.Controls.Add(pane.Card);
-            Panel gap = new Panel { Dock = DockStyle.Top, Height = 8 };
-            pane.Root.Controls.Add(split);
-            pane.Root.Controls.Add(gap);
-            pane.Root.Controls.Add(search);
-            return pane;
-        }
-
-        private static ModernButton CreateButton(string name, string text, ButtonKind kind)
-        {
-            return new ModernButton { Name = name, Text = text, Kind = kind, Size = new Size(100, 34), Margin = new Padding(8, 0, 0, 0) };
-        }
-
-        private sealed class CodePane
-        {
-            internal Panel Root;
-            internal ModernGroupBox Card;
-            internal ModernDataGrid Grid;
-            internal ModernPropertyGrid Editor;
-            internal ModernTextBox Keyword;
-            internal ModernButton Search;
-            internal ModernButton New;
-            internal ModernButton Cancel;
-            internal ModernButton Save;
-            internal ModernButton Delete;
-        }
+        #endregion
     }
 }
