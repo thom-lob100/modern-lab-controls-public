@@ -171,6 +171,7 @@ namespace Modern.Lab.Controls.Wpf.Selection
 
         private readonly ObservableCollection<object> filteredItems;
         private TextBox editableTextBox;
+        private System.Windows.Controls.Primitives.ToggleButton dropToggle;
         private bool isRebuildingItems;
         private bool isRaisingDropDown;
 
@@ -769,7 +770,77 @@ namespace Modern.Lab.Controls.Wpf.Selection
                 }
             }
 
+            System.Windows.Controls.Primitives.ToggleButton toggle =
+                    this.InnerComboBox.Template.FindName("DropToggle", this.InnerComboBox) as System.Windows.Controls.Primitives.ToggleButton;
+
+            if (!object.ReferenceEquals(toggle, this.dropToggle))
+            {
+                if (this.dropToggle != null)
+                {
+                    this.dropToggle.PreviewMouseLeftButtonDown -= this.OnDropTogglePreviewMouseDown;
+                }
+
+                this.dropToggle = toggle;
+
+                if (this.dropToggle != null)
+                {
+                    this.dropToggle.PreviewMouseLeftButtonDown += this.OnDropTogglePreviewMouseDown;
+                }
+            }
+
             this.UpdatePlaceholderVisibility();
+        }
+
+        // 편집 가능 콤보는 WinForms DropDown(CBS_DROPDOWN)처럼 셰브런을 눌러야 목록이 열린다.
+        // 필드 표면 토글이 입력 칸 둘레(왼쪽 여백·위아래 여백·테두리)까지 덮고 있어 그곳을
+        // 누르면 목록이 열리던 것을 막고, 대신 입력 칸에 커서를 둔다. 셰브런 영역은 입력 칸의
+        // 오른쪽 여백과 같은 폭이다. 열린 목록을 닫는 클릭은 토글에 그대로 맡긴다.
+        private void OnDropTogglePreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            System.Windows.Controls.Primitives.ToggleButton toggle = sender as System.Windows.Controls.Primitives.ToggleButton;
+            TextBox editor = this.editableTextBox;
+
+            if (toggle == null || editor == null || !this.IsEditable || this.InnerComboBox.IsDropDownOpen)
+            {
+                return;
+            }
+
+            if (e.GetPosition(toggle).X >= toggle.ActualWidth - editor.Margin.Right)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            editor.Focus();
+            editor.Select(CaretIndexNear(editor, e.GetPosition(editor).X), 0);
+        }
+
+        // 입력 칸 밖의 클릭 위치를 가로 좌표만으로 가장 가까운 캐럿 위치로 옮긴다.
+        private static int CaretIndexNear(TextBox editor, double x)
+        {
+            int length = editor.Text == null ? 0 : editor.Text.Length;
+
+            if (x <= 0 || length == 0)
+            {
+                return 0;
+            }
+
+            int index = editor.GetCharacterIndexFromPoint(new Point(x, editor.ActualHeight / 2), true);
+
+            if (index < 0)
+            {
+                return length;
+            }
+
+            Rect leading = editor.GetRectFromCharacterIndex(index);
+            Rect trailing = editor.GetRectFromCharacterIndex(index, true);
+
+            if (x > (leading.Left + trailing.Left) / 2)
+            {
+                index++;
+            }
+
+            return Math.Min(index, length);
         }
 
         // IME 조합 중에도 발생하므로, 첫 자음 입력부터 목록이 필터링되고
