@@ -1042,7 +1042,7 @@ AutoFit을 꺼도 유지하며, 화면에 없는 행의 값도 최소폭 계산�
 | `StatusText` | string | 상태바 오른쪽 자유 텍스트 (선택 대상·조회 조건 등) |
 | `AlternatingRowColors` | bool | 기본 false. true면 홀수 행이 테마 교차색(`Brush.GridRowAlt`)으로 칠해진다 — 행이 많고 가로로 긴 그리드에서 시선 유지용. `ModernSpreadGrid`에도 동명 속성이 있다(그쪽은 기존 화면 보존을 위해 기본 true) |
 | `RowColorSelector` | Func<object, string> | 보조 컬럼 없이 행 객체에서 배경색을 계산. 선택·hover 다음, RowColorMember보다 우선. 빈 값·잘못된 색·예외는 기존 컬럼 색 또는 기본 배경으로 폴백. 순수 계산 함수만 지정하고 외부 상태를 바꾼 뒤에는 새 함수로 지정해 갱신 |
-| `RowMarkerSelector` | Func<object, string> | 행 객체에서 짧은 모서리 표식 문자열을 계산. 첫 번째 보이는 열의 왼쪽 위에 8 DIP로 표시하며 행 높이·열 너비·클릭 영역을 바꾸지 않는다. 빈 값·예외는 숨김. 테마의 SuccessText 색을 쓰고 처음 나타날 때 1.4초 동안만 밝기를 변화시킨 뒤 고정한다. Windows 애니메이션 끄기를 존중한다. 외부 상태 변경 후 새 함수로 지정해 갱신하며 데이터 소스 또는 함수 교체 시 최초 강조 기준을 초기화한다 |
+| `RowMarkerSelector` | Func<object, string> | 행 객체에서 짧은 모서리 표식 문자열을 계산. 첫 번째 보이는 열의 왼쪽 위에 8 DIP로 표시하며 행 높이·열 너비·클릭 영역을 바꾸지 않는다. 빈 값·예외는 숨김. 테마의 WarningText(주황 계열) 색을 쓴다 — 선택 행의 파란 배경·글자와 색상이 달라 선택된 행 위에서도 구분된다(2026-09-26, 전에는 SuccessText). 처음 나타날 때 1.4초 동안만 밝기를 변화시킨 뒤 고정한다. Windows 애니메이션 끄기를 존중한다. 외부 상태 변경 후 새 함수로 지정해 갱신하며 데이터 소스 또는 함수 교체 시 최초 강조 기준을 초기화한다 |
 | `SelectRow(predicate)` | bool | 현재 정렬·필터 뷰에서 조건을 만족하는 첫 행을 선택하고 스크롤. 성공 true, 없거나 null 조건이면 false와 기존 선택 유지. 행 객체는 DataTable/DataView에서 DataRowView이며 조회·쓰기 기능은 없음 |
 | `RowColorMember` | string | 행 배경색 컬럼 (선택). 값은 `"#FEE2E2"` 같은 색 문자열 — 비었거나 해석 불가한 행은 기본 배경 유지. 상태별 행 강조용 (상태 표시가 한 컬럼으로 충분하면 `Kind = Badge` 컬럼도 대안) |
 | `RowForegroundMember` | string | 행 **글자색** 컬럼 (선택, 2026-08-29). 값은 `"#DC2626"` 같은 색 문자열 — 비었거나 해석 불가한 행은 기본 글자색. 판정 FAIL 행 전체를 빨간 글자로 보이게 하는 자리. 배지/링크/버튼 셀은 자기 색을 유지하고, 선택 셀의 글자색이 우선한다 |
@@ -1720,8 +1720,9 @@ Modern.Lab.WinForms.Controls.Dialogs.ModernMessageDialog.ShowWarning(
 
 
 **기술 상세** (2026-09-16): `details` 를 넘기면 버튼 줄 **왼쪽 끝**에 `Details` 가 생기고,
-누르면 창이 **버튼 줄 아래로** 자라면서 읽기 전용 상세 박스와 `Copy` 가 나온다. 다시 누르면
-접히고 창도 원래 크기로 돌아간다. `Copy` 는 제목·본문·상세를 **한 번에** 담는다 — 상세만
+누르면 창이 **버튼 줄 아래로** 자라면서 읽기 전용 상세 박스가 나온다. 상세 박스는 본문 박스와
+같은 생김새이고 박스 안 오른쪽 위 복사 아이콘으로 복사한다(2026-09-27, 전에는 단선 입력칸 + `Copy` 버튼).
+다시 누르면 접히고 창도 원래 크기로 돌아간다. 복사는 제목·본문·상세를 **한 번에** 담는다 — 상세만
 보내면 어느 화면 무슨 상황이었는지 알 수 없기 때문이다. `details` 가 비어 있으면 버튼 자체가
 생기지 않는다. 현업에게 **내부 컴럼명·계약 용어를 보여 주지 않으면서** 개발자는 원문을
 받기 위한 것이다.
@@ -1933,7 +1934,8 @@ this.expFilters.ExpandedChanged += this.OnFiltersToggled;
 `ModernDataGrid`는 `ConfigureColumns` 없이 `DataSource`만 주면, `ModernFieldList`는
 `DefineFields` 없이 `SetRow`만 주면 **데이터가 무엇을 보여 줄지 정한다.** 규칙은
 `Modern.Lab.Controls.Wpf.Data.AutoColumns` 한 곳에 있다 — 캡션은 용어사전,
-이름이 `_COLOR`로 끝나면 제외, `_TM`으로 끝나면 시각(`yyyy-MM-dd HH:mm:ss` + 가운데).
+이름이 `_COLOR`로 끝나면 제외, `_TM`으로 끝나면 시각(`yyyy-MM-dd HH:mm:ss`, 그리드는 가운데 정렬도).
+필드 목록의 시각 서식은 2026-09-26부터 실제로 적용된다(그 전에는 원래 문자열이 그대로 보였다).
 선언하면 선언이 이긴다. 자세한 것은 각 컨트롤의 교체 가이드.
 
 ## ModernFieldList
@@ -1951,6 +1953,7 @@ this.expFilters.ExpandedChanged += this.OnFiltersToggled;
 | `ModernFieldDefinition(...) { IsLink = true }` / `FieldLinkClick` | **링크 필드** (2026-08-29 추가) — 값이 액센트색·**항상 밑줄**·손 커서(호버는 색만 진해진다), 왼쪽 클릭 시 `FieldLinkClick(Member, Value)`. 그리드 Link 컬럼과 같은 역할(Req Serial No → 의뢰서 팝업). 빈 값은 링크가 아니다 |
 | `ModernFieldDefinition(...) { IsBadge = true }` / `BadgeAccentValues` / `BadgeSpinValues` | **배지 필드** (2026-09-15 추가) — 값 자리에 `ModernStatusBadge`가 놓인다. 색은 값에서 유도되므로(`ColorValue`) 그리드 배지의 `BadgeAutoColor`와 같은 규칙이고 **같은 값이면 표와 카드의 색이 맞는다**. 강조(`BadgeAccentValues`)·회전(`BadgeSpinValues`)은 그리드 배지와 같은 문법이다. 값이 비면 "-", `IsLink`와 겹치면 배지가 이긴다 |
 | 배지 필드의 수명 | `IsBadge` 는 `DefineFields` 시점에 읽힌다(`IsLink` 는 매번 읽는다). 조회마다 `FieldDefinitions.Apply` 를 불러도 정의가 같으면 배지를 다시 만들지 않아 회전 위상이 유지된다 |
+| `ModernFieldDefinition(...) { Format = "N0" }` / `FieldDefinitions.Format(member, format)` | **값 표시 형식** (2026-09-26 추가) — 그리드 컬럼 `Format`과 같은 문법·규칙·서식 함수다. 문자열 날짜·숫자도 해석해 적용하고, 실패하면 원래 값(예외 없음). `_TM` 필드는 `yyyy-MM-dd HH:mm:ss`가 기본값이고 빈 값을 주면 서식을 끈다 |
 | `SetRow(DataRow)` | 행에서 값을 읽어 채움 (없는 컬럼/빈 값 = "-") |
 | `SetValue(member, value)` / `ClearValues()` | 개별 값 지정 / 전부 "-" |
 
@@ -1969,6 +1972,7 @@ FieldDefinitions.Of(lots)
         .Badge("MES_PROC_STAT_CD")
         .BadgeAccent("MES_PROC_STAT_CD", "HOLD")
         .BadgeSpin("MES_PROC_STAT_CD", "PROC;SENDING")
+        .Format("QTY", "N0")
         .Apply(this.fieldInfo);
 ```
 

@@ -145,7 +145,7 @@ namespace Modern.Lab.Samples
             string engineer = SelectedKey(this.cboEngineer);
             this.EngrUserId = engineer;
             DataRowView row = this.cboEngineer.SelectedItem as DataRowView;
-            this.lblEngineerName.Text = engineer.Length == 0 || row == null ? string.Empty
+            this.txtEngineerName.Text = engineer.Length == 0 || row == null ? string.Empty
                     : TableHelper.CellText(row.Row, "USER_NM");
             this.btnOk.Enabled = this.ready && !this.closed && engineer.Length > 0
                     && SelectedKey(this.cboCode).Length > 0
