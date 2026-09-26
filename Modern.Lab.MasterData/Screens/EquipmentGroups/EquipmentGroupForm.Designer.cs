@@ -1,6 +1,6 @@
 namespace Modern.Lab.MasterData
 {
-    public partial class UserForm
+    public partial class EquipmentGroupForm
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -14,7 +14,7 @@ namespace Modern.Lab.MasterData
         private System.Windows.Forms.Panel gapSearch;
         private Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer splitMain;
         private Modern.Lab.WinForms.Controls.Layout.ModernGroupBox listCard;
-        private Modern.Lab.WinForms.Controls.Data.ModernDataGrid gridUsers;
+        private Modern.Lab.WinForms.Controls.Data.ModernDataGrid gridEquipmentGroups;
         private Modern.Lab.WinForms.Controls.Layout.ModernGroupBox editorCard;
         private Modern.Lab.Hosting.MasterData.ModernPropertyGrid propertyGrid;
         private System.Windows.Forms.FlowLayoutPanel actionPanel;
@@ -53,7 +53,7 @@ namespace Modern.Lab.MasterData
             this.gapSearch = new System.Windows.Forms.Panel();
             this.splitMain = new Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer();
             this.listCard = new Modern.Lab.WinForms.Controls.Layout.ModernGroupBox();
-            this.gridUsers = new Modern.Lab.WinForms.Controls.Data.ModernDataGrid();
+            this.gridEquipmentGroups = new Modern.Lab.WinForms.Controls.Data.ModernDataGrid();
             this.editorCard = new Modern.Lab.WinForms.Controls.Layout.ModernGroupBox();
             this.propertyGrid = new Modern.Lab.Hosting.MasterData.ModernPropertyGrid();
             this.actionPanel = new System.Windows.Forms.FlowLayoutPanel();
@@ -90,7 +90,7 @@ namespace Modern.Lab.MasterData
             this.lblTitle.Name = "lblTitle";
             this.lblTitle.Size = new System.Drawing.Size(1376, 28);
             this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "User Master — Session demo - changes reset on restart";
+            this.lblTitle.Text = "Equipment Group Master — Session demo - changes reset on restart";
             this.lblTitle.TitleBar = true;
             this.spTitle.Dock = System.Windows.Forms.DockStyle.Top;
             this.spTitle.Location = new System.Drawing.Point(12, 40);
@@ -115,7 +115,7 @@ namespace Modern.Lab.MasterData
             this.lblKeyword.Text = "Keyword";
             this.txtKeyword.Location = new System.Drawing.Point(88, 12);
             this.txtKeyword.Name = "txtKeyword";
-            this.txtKeyword.PlaceholderText = "User Id or keyword";
+            this.txtKeyword.PlaceholderText = "Equipment Group Id or keyword";
             this.txtKeyword.ShowClearButton = true;
             this.txtKeyword.Size = new System.Drawing.Size(280, 32);
             this.txtKeyword.TabIndex = 1;
@@ -137,33 +137,32 @@ namespace Modern.Lab.MasterData
             this.splitMain.Panel1.Controls.Add(this.listCard);
             this.splitMain.Panel2.Controls.Add(this.editorCard);
             this.splitMain.Size = new System.Drawing.Size(1376, 676);
-            this.splitMain.Panel2MinSize = 470;
             this.splitMain.SplitterDistance = 820;
             this.splitMain.SplitterWidth = 8;
             this.splitMain.TabIndex = 4;
             this.splitMain.TabStop = false;
-            this.listCard.Controls.Add(this.gridUsers);
+            this.listCard.Controls.Add(this.gridEquipmentGroups);
             this.listCard.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listCard.Location = new System.Drawing.Point(0, 0);
             this.listCard.Name = "listCard";
             this.listCard.Padding = new System.Windows.Forms.Padding(6, 40, 6, 6);
             this.listCard.Size = new System.Drawing.Size(820, 676);
             this.listCard.TabIndex = 0;
-            this.listCard.Text = "User List";
+            this.listCard.Text = "Equipment Group List";
             this.listCard.TitleBar = true;
-            this.gridUsers.AutoFitColumns = true;
-            this.gridUsers.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gridUsers.EmptyText = "No users";
-            this.gridUsers.Location = new System.Drawing.Point(8, 40);
-            this.gridUsers.Name = "gridUsers";
-            this.gridUsers.ContextMenuStrip = this.menuActions;
-            this.gridUsers.ReadOnly = true;
-            this.gridUsers.ShowStatusBar = true;
-            this.gridUsers.Size = new System.Drawing.Size(804, 628);
-            this.gridUsers.StatusCountFormat = "{0:N0} users";
-            this.gridUsers.TabIndex = 0;
-            this.gridUsers.SelectionChanged += new System.EventHandler(this.OnUserSelectionChanged);
-            this.gridUsers.Child = null;
+            this.gridEquipmentGroups.AutoFitColumns = true;
+            this.gridEquipmentGroups.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gridEquipmentGroups.EmptyText = "No equipment groups";
+            this.gridEquipmentGroups.Location = new System.Drawing.Point(8, 40);
+            this.gridEquipmentGroups.Name = "gridEquipmentGroups";
+            this.gridEquipmentGroups.ContextMenuStrip = this.menuActions;
+            this.gridEquipmentGroups.ReadOnly = true;
+            this.gridEquipmentGroups.ShowStatusBar = true;
+            this.gridEquipmentGroups.Size = new System.Drawing.Size(804, 628);
+            this.gridEquipmentGroups.StatusCountFormat = "{0:N0} equipment groups";
+            this.gridEquipmentGroups.TabIndex = 0;
+            this.gridEquipmentGroups.SelectionChanged += new System.EventHandler(this.OnEquipmentGroupSelectionChanged);
+            this.gridEquipmentGroups.Child = null;
             this.editorCard.Controls.Add(this.propertyGrid);
             this.editorCard.Controls.Add(this.actionPanel);
             this.editorCard.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -172,7 +171,7 @@ namespace Modern.Lab.MasterData
             this.editorCard.Padding = new System.Windows.Forms.Padding(12, 44, 12, 8);
             this.editorCard.Size = new System.Drawing.Size(548, 676);
             this.editorCard.TabIndex = 0;
-            this.editorCard.Text = "User";
+            this.editorCard.Text = "Equipment Group";
             this.editorCard.TitleBar = true;
             this.propertyGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.propertyGrid.LabelWidth = 150;
@@ -185,7 +184,6 @@ namespace Modern.Lab.MasterData
             this.actionPanel.Controls.Add(this.btnCancel);
             this.actionPanel.Controls.Add(this.btnNew);
             this.actionPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.actionPanel.WrapContents = false;
             this.actionPanel.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
             this.actionPanel.Location = new System.Drawing.Point(14, 616);
             this.actionPanel.Name = "actionPanel";
@@ -251,10 +249,10 @@ namespace Modern.Lab.MasterData
             this.Controls.Add(this.spTitle);
             this.Controls.Add(this.titlePanel);
             this.MinimumSize = new System.Drawing.Size(1000, 600);
-            this.Name = "UserForm";
+            this.Name = "EquipmentGroupForm";
             this.Padding = new System.Windows.Forms.Padding(12);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "User Master";
+            this.Text = "Equipment Group Master";
             this.titlePanel.ResumeLayout(false);
             this.searchCard.ResumeLayout(false);
             this.splitMain.Panel1.ResumeLayout(false);

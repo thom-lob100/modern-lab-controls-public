@@ -91,11 +91,11 @@ namespace Modern.Lab.MasterData
             };
         }
 
-        private void OnCommonCodeLoad(object sender, EventArgs e)
+        protected override void OnFormLoad(object sender, EventArgs e)
         {
             if (this.manageTypes)
             {
-                this.OnFormLoad(sender, e);
+                base.OnFormLoad(sender, e);
             }
             else
             {
@@ -112,12 +112,12 @@ namespace Modern.Lab.MasterData
             }
         }
 
-        private new void OnSearchClick(object sender, EventArgs e)
+        protected override void OnSearchClick(object sender, EventArgs e)
         {
             if (this.CanQuery) { base.OnSearchClick(sender, e); }
         }
 
-        private new void OnKeywordEnterPressed(object sender, EventArgs e)
+        protected override void OnKeywordEnterPressed(object sender, EventArgs e)
         {
             if (this.CanQuery) { base.OnKeywordEnterPressed(sender, e); }
         }

@@ -1,6 +1,6 @@
 namespace Modern.Lab.MasterData
 {
-    public partial class UserForm
+    public partial class ReasonCodeForm
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -14,7 +14,7 @@ namespace Modern.Lab.MasterData
         private System.Windows.Forms.Panel gapSearch;
         private Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer splitMain;
         private Modern.Lab.WinForms.Controls.Layout.ModernGroupBox listCard;
-        private Modern.Lab.WinForms.Controls.Data.ModernDataGrid gridUsers;
+        private Modern.Lab.WinForms.Controls.Data.ModernDataGrid gridReasonCodes;
         private Modern.Lab.WinForms.Controls.Layout.ModernGroupBox editorCard;
         private Modern.Lab.Hosting.MasterData.ModernPropertyGrid propertyGrid;
         private System.Windows.Forms.FlowLayoutPanel actionPanel;
@@ -53,7 +53,7 @@ namespace Modern.Lab.MasterData
             this.gapSearch = new System.Windows.Forms.Panel();
             this.splitMain = new Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer();
             this.listCard = new Modern.Lab.WinForms.Controls.Layout.ModernGroupBox();
-            this.gridUsers = new Modern.Lab.WinForms.Controls.Data.ModernDataGrid();
+            this.gridReasonCodes = new Modern.Lab.WinForms.Controls.Data.ModernDataGrid();
             this.editorCard = new Modern.Lab.WinForms.Controls.Layout.ModernGroupBox();
             this.propertyGrid = new Modern.Lab.Hosting.MasterData.ModernPropertyGrid();
             this.actionPanel = new System.Windows.Forms.FlowLayoutPanel();
@@ -90,7 +90,7 @@ namespace Modern.Lab.MasterData
             this.lblTitle.Name = "lblTitle";
             this.lblTitle.Size = new System.Drawing.Size(1376, 28);
             this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "User Master — Session demo - changes reset on restart";
+            this.lblTitle.Text = "Reason Code Master — Session demo - changes reset on restart";
             this.lblTitle.TitleBar = true;
             this.spTitle.Dock = System.Windows.Forms.DockStyle.Top;
             this.spTitle.Location = new System.Drawing.Point(12, 40);
@@ -115,7 +115,7 @@ namespace Modern.Lab.MasterData
             this.lblKeyword.Text = "Keyword";
             this.txtKeyword.Location = new System.Drawing.Point(88, 12);
             this.txtKeyword.Name = "txtKeyword";
-            this.txtKeyword.PlaceholderText = "User Id or keyword";
+            this.txtKeyword.PlaceholderText = "Reason Code Id or keyword";
             this.txtKeyword.ShowClearButton = true;
             this.txtKeyword.Size = new System.Drawing.Size(280, 32);
             this.txtKeyword.TabIndex = 1;
@@ -142,28 +142,28 @@ namespace Modern.Lab.MasterData
             this.splitMain.SplitterWidth = 8;
             this.splitMain.TabIndex = 4;
             this.splitMain.TabStop = false;
-            this.listCard.Controls.Add(this.gridUsers);
+            this.listCard.Controls.Add(this.gridReasonCodes);
             this.listCard.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listCard.Location = new System.Drawing.Point(0, 0);
             this.listCard.Name = "listCard";
             this.listCard.Padding = new System.Windows.Forms.Padding(6, 40, 6, 6);
             this.listCard.Size = new System.Drawing.Size(820, 676);
             this.listCard.TabIndex = 0;
-            this.listCard.Text = "User List";
+            this.listCard.Text = "Reason Code List";
             this.listCard.TitleBar = true;
-            this.gridUsers.AutoFitColumns = true;
-            this.gridUsers.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gridUsers.EmptyText = "No users";
-            this.gridUsers.Location = new System.Drawing.Point(8, 40);
-            this.gridUsers.Name = "gridUsers";
-            this.gridUsers.ContextMenuStrip = this.menuActions;
-            this.gridUsers.ReadOnly = true;
-            this.gridUsers.ShowStatusBar = true;
-            this.gridUsers.Size = new System.Drawing.Size(804, 628);
-            this.gridUsers.StatusCountFormat = "{0:N0} users";
-            this.gridUsers.TabIndex = 0;
-            this.gridUsers.SelectionChanged += new System.EventHandler(this.OnUserSelectionChanged);
-            this.gridUsers.Child = null;
+            this.gridReasonCodes.AutoFitColumns = true;
+            this.gridReasonCodes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gridReasonCodes.EmptyText = "No reason codes";
+            this.gridReasonCodes.Location = new System.Drawing.Point(8, 40);
+            this.gridReasonCodes.Name = "gridReasonCodes";
+            this.gridReasonCodes.ContextMenuStrip = this.menuActions;
+            this.gridReasonCodes.ReadOnly = true;
+            this.gridReasonCodes.ShowStatusBar = true;
+            this.gridReasonCodes.Size = new System.Drawing.Size(804, 628);
+            this.gridReasonCodes.StatusCountFormat = "{0:N0} reason codes";
+            this.gridReasonCodes.TabIndex = 0;
+            this.gridReasonCodes.SelectionChanged += new System.EventHandler(this.OnReasonCodeSelectionChanged);
+            this.gridReasonCodes.Child = null;
             this.editorCard.Controls.Add(this.propertyGrid);
             this.editorCard.Controls.Add(this.actionPanel);
             this.editorCard.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -172,7 +172,7 @@ namespace Modern.Lab.MasterData
             this.editorCard.Padding = new System.Windows.Forms.Padding(12, 44, 12, 8);
             this.editorCard.Size = new System.Drawing.Size(548, 676);
             this.editorCard.TabIndex = 0;
-            this.editorCard.Text = "User";
+            this.editorCard.Text = "Reason Code";
             this.editorCard.TitleBar = true;
             this.propertyGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.propertyGrid.LabelWidth = 150;
@@ -251,10 +251,10 @@ namespace Modern.Lab.MasterData
             this.Controls.Add(this.spTitle);
             this.Controls.Add(this.titlePanel);
             this.MinimumSize = new System.Drawing.Size(1000, 600);
-            this.Name = "UserForm";
+            this.Name = "ReasonCodeForm";
             this.Padding = new System.Windows.Forms.Padding(12);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "User Master";
+            this.Text = "Reason Code Master";
             this.titlePanel.ResumeLayout(false);
             this.searchCard.ResumeLayout(false);
             this.splitMain.Panel1.ResumeLayout(false);

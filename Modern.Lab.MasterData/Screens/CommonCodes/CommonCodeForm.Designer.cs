@@ -144,7 +144,6 @@ namespace Modern.Lab.MasterData
             this.txtKeyword.ShowClearButton = true;
             this.txtKeyword.Size = new System.Drawing.Size(280, 32);
             this.txtKeyword.TabIndex = 1;
-            this.txtKeyword.EnterPressed += new System.EventHandler(this.OnKeywordEnterPressed);
             this.btnSearch.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Primary;
             this.btnSearch.Location = new System.Drawing.Point(376, 12);
             this.btnSearch.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
@@ -152,7 +151,6 @@ namespace Modern.Lab.MasterData
             this.btnSearch.Size = new System.Drawing.Size(104, 32);
             this.btnSearch.TabIndex = 2;
             this.btnSearch.Text = "Search";
-            this.btnSearch.Click += new System.EventHandler(this.OnSearchClick);
             this.gapSearch.Dock = System.Windows.Forms.DockStyle.Top;
             this.gapSearch.Location = new System.Drawing.Point(0, 64);
             this.gapSearch.Name = "gapSearch";
@@ -225,7 +223,6 @@ namespace Modern.Lab.MasterData
             this.btnDelete.Size = new System.Drawing.Size(100, 34);
             this.btnDelete.TabIndex = 3;
             this.btnDelete.Text = "Delete";
-            this.btnDelete.Click += new System.EventHandler(this.OnDeleteClick);
             this.btnSave.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Execute;
             this.btnSave.Location = new System.Drawing.Point(316, 8);
             this.btnSave.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
@@ -233,7 +230,6 @@ namespace Modern.Lab.MasterData
             this.btnSave.Size = new System.Drawing.Size(100, 34);
             this.btnSave.TabIndex = 2;
             this.btnSave.Text = "Save";
-            this.btnSave.Click += new System.EventHandler(this.OnSaveClick);
             this.btnCancel.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Secondary;
             this.btnCancel.Location = new System.Drawing.Point(208, 8);
             this.btnCancel.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
@@ -241,7 +237,6 @@ namespace Modern.Lab.MasterData
             this.btnCancel.Size = new System.Drawing.Size(100, 34);
             this.btnCancel.TabIndex = 1;
             this.btnCancel.Text = "Cancel";
-            this.btnCancel.Click += new System.EventHandler(this.OnCancelClick);
             this.btnNew.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Secondary;
             this.btnNew.Location = new System.Drawing.Point(100, 8);
             this.btnNew.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
@@ -249,7 +244,6 @@ namespace Modern.Lab.MasterData
             this.btnNew.Size = new System.Drawing.Size(100, 34);
             this.btnNew.TabIndex = 0;
             this.btnNew.Text = "New";
-            this.btnNew.Click += new System.EventHandler(this.OnNewClick);
             this.menuActions.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.miNew,
             this.miCancel,
@@ -258,25 +252,20 @@ namespace Modern.Lab.MasterData
             this.miDelete});
             this.menuActions.Name = "menuActions";
             this.menuActions.Size = new System.Drawing.Size(153, 98);
-            this.menuActions.Opening += new System.ComponentModel.CancelEventHandler(this.OnActionMenuOpening);
             this.miNew.Name = "miNew";
             this.miNew.Size = new System.Drawing.Size(152, 22);
             this.miNew.Text = "New";
-            this.miNew.Click += new System.EventHandler(this.OnNewClick);
             this.miCancel.Name = "miCancel";
             this.miCancel.Size = new System.Drawing.Size(152, 22);
             this.miCancel.Text = "Cancel";
-            this.miCancel.Click += new System.EventHandler(this.OnCancelClick);
             this.miSave.Name = "miSave";
             this.miSave.Size = new System.Drawing.Size(152, 22);
             this.miSave.Text = "Save";
-            this.miSave.Click += new System.EventHandler(this.OnSaveClick);
             this.sepDelete.Name = "sepDelete";
             this.sepDelete.Size = new System.Drawing.Size(149, 6);
             this.miDelete.Name = "miDelete";
             this.miDelete.Size = new System.Drawing.Size(152, 22);
             this.miDelete.Text = "Delete";
-            this.miDelete.Click += new System.EventHandler(this.OnDeleteClick);
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1400, 800);
@@ -288,7 +277,6 @@ namespace Modern.Lab.MasterData
             this.Padding = new System.Windows.Forms.Padding(12);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Common Code Master";
-            this.Load += new System.EventHandler(this.OnCommonCodeLoad);
             this.typeBar.ResumeLayout(false);
             this.contentPanel.ResumeLayout(false);
             this.searchCard.ResumeLayout(false);

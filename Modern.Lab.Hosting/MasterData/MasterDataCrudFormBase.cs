@@ -256,8 +256,53 @@ namespace Modern.Lab.Hosting.MasterData
             this.view.Editor.KeyColumns = keyText;
             this.view.Editor.ParameterNameStyle = ParameterNameStyle.PascalCase;
             this.view.Editor.ValueChanged += this.OnEditorValueChanged;
+            this.WireViewEvents();
 
             this.UpdateActionState();
+        }
+
+        // 버튼·메뉴·조회·첫 로드는 베이스가 연결한다. VS 디자이너는 Designer.cs 가 베이스 클래스의 메서드를
+        // 이벤트 핸들러로 쓰면 폼을 열지 못한다("… a class this class derives from already defines the method").
+        // 예전 Designer.cs 에 같은 연결이 남아 있어도 한 번만 불리도록 먼저 뺀 뒤 붙인다.
+        private void WireViewEvents()
+        {
+            this.Load -= this.OnFormLoad;
+            this.Load += this.OnFormLoad;
+
+            if (this.view.Keyword != null)
+            {
+                this.view.Keyword.EnterPressed -= this.OnKeywordEnterPressed;
+                this.view.Keyword.EnterPressed += this.OnKeywordEnterPressed;
+            }
+
+            if (this.view.SearchButton != null)
+            {
+                Rewire(this.view.SearchButton, this.OnSearchClick);
+            }
+
+            Rewire(this.view.NewButton, this.OnNewClick);
+            Rewire(this.view.CancelButton, this.OnCancelClick);
+            Rewire(this.view.SaveButton, this.OnSaveClick);
+            Rewire(this.view.DeleteButton, this.OnDeleteClick);
+            Rewire(this.view.NewMenuItem, this.OnNewClick);
+            Rewire(this.view.CancelMenuItem, this.OnCancelClick);
+            Rewire(this.view.SaveMenuItem, this.OnSaveClick);
+            Rewire(this.view.DeleteMenuItem, this.OnDeleteClick);
+
+            this.view.ActionMenu.Opening -= this.OnActionMenuOpening;
+            this.view.ActionMenu.Opening += this.OnActionMenuOpening;
+        }
+
+        private static void Rewire(Control control, EventHandler handler)
+        {
+            control.Click -= handler;
+            control.Click += handler;
+        }
+
+        private static void Rewire(ToolStripItem item, EventHandler handler)
+        {
+            item.Click -= handler;
+            item.Click += handler;
         }
 
         // 복합 키(KeyColumns)가 없으면 단일 키(KeyColumn)를 그대로 쓴다 — 기존 화면의 값·동작이 바뀌지 않는다.
@@ -400,18 +445,21 @@ namespace Modern.Lab.Hosting.MasterData
             this.UpdateActionState();
         }
 
-        protected void OnFormLoad(object sender, EventArgs e)
+        /// <summary>첫 로드 — 베이스가 폼 <c>Load</c>에 연결한다. 첫 조회 순서가 다른 화면은 재정의한다.</summary>
+        protected virtual void OnFormLoad(object sender, EventArgs e)
         {
             this.LoadLookupSources();
             this.ReloadItems();
         }
 
-        protected void OnSearchClick(object sender, EventArgs e)
+        /// <summary>조회 버튼 — 베이스가 <c>btnSearch</c>에 연결한다. 조회 조건이 다른 화면은 재정의한다.</summary>
+        protected virtual void OnSearchClick(object sender, EventArgs e)
         {
             this.ReloadItems();
         }
 
-        protected void OnKeywordEnterPressed(object sender, EventArgs e)
+        /// <summary>조회어 Enter — 베이스가 <c>txtKeyword</c>에 연결한다. 조회 조건이 다른 화면은 재정의한다.</summary>
+        protected virtual void OnKeywordEnterPressed(object sender, EventArgs e)
         {
             this.ReloadItems();
         }

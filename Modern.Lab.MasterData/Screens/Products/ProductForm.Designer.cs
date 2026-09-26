@@ -1,6 +1,6 @@
 namespace Modern.Lab.MasterData
 {
-    public partial class UserForm
+    public partial class ProductForm
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -8,13 +8,17 @@ namespace Modern.Lab.MasterData
         private Modern.Lab.WinForms.Controls.Display.ModernLabel lblTitle;
         private System.Windows.Forms.Panel spTitle;
         private Modern.Lab.WinForms.Controls.Layout.ModernCardPanel searchCard;
-        private Modern.Lab.WinForms.Controls.Display.ModernLabel lblKeyword;
-        private Modern.Lab.WinForms.Controls.Input.ModernTextBox txtKeyword;
+        private Modern.Lab.WinForms.Controls.Display.ModernLabel lblSubProdTyp;
+        private Modern.Lab.WinForms.Controls.Selection.ModernComboBox cboSubProdTyp;
+        private Modern.Lab.WinForms.Controls.Display.ModernLabel lblLotCd;
+        private Modern.Lab.WinForms.Controls.Selection.ModernComboBox cboLotCd;
+        private Modern.Lab.WinForms.Controls.Display.ModernLabel lblProdId;
+        private Modern.Lab.WinForms.Controls.Input.ModernTextBox txtProdId;
         private Modern.Lab.WinForms.Controls.Input.ModernButton btnSearch;
         private System.Windows.Forms.Panel gapSearch;
         private Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer splitMain;
         private Modern.Lab.WinForms.Controls.Layout.ModernGroupBox listCard;
-        private Modern.Lab.WinForms.Controls.Data.ModernDataGrid gridUsers;
+        private Modern.Lab.WinForms.Controls.Data.ModernDataGrid gridProducts;
         private Modern.Lab.WinForms.Controls.Layout.ModernGroupBox editorCard;
         private Modern.Lab.Hosting.MasterData.ModernPropertyGrid propertyGrid;
         private System.Windows.Forms.FlowLayoutPanel actionPanel;
@@ -28,6 +32,8 @@ namespace Modern.Lab.MasterData
         private System.Windows.Forms.ToolStripMenuItem miSave;
         private System.Windows.Forms.ToolStripSeparator sepDelete;
         private System.Windows.Forms.ToolStripMenuItem miDelete;
+        private System.Windows.Forms.ToolStripSeparator sepDuplicate;
+        private System.Windows.Forms.ToolStripMenuItem miDuplicate;
 
         protected override void Dispose(bool disposing)
         {
@@ -47,13 +53,17 @@ namespace Modern.Lab.MasterData
             this.lblTitle = new Modern.Lab.WinForms.Controls.Display.ModernLabel();
             this.spTitle = new System.Windows.Forms.Panel();
             this.searchCard = new Modern.Lab.WinForms.Controls.Layout.ModernCardPanel();
-            this.lblKeyword = new Modern.Lab.WinForms.Controls.Display.ModernLabel();
-            this.txtKeyword = new Modern.Lab.WinForms.Controls.Input.ModernTextBox();
+            this.lblSubProdTyp = new Modern.Lab.WinForms.Controls.Display.ModernLabel();
+            this.cboSubProdTyp = new Modern.Lab.WinForms.Controls.Selection.ModernComboBox();
+            this.lblLotCd = new Modern.Lab.WinForms.Controls.Display.ModernLabel();
+            this.cboLotCd = new Modern.Lab.WinForms.Controls.Selection.ModernComboBox();
+            this.lblProdId = new Modern.Lab.WinForms.Controls.Display.ModernLabel();
+            this.txtProdId = new Modern.Lab.WinForms.Controls.Input.ModernTextBox();
             this.btnSearch = new Modern.Lab.WinForms.Controls.Input.ModernButton();
             this.gapSearch = new System.Windows.Forms.Panel();
             this.splitMain = new Modern.Lab.WinForms.Controls.Layout.ModernSplitContainer();
             this.listCard = new Modern.Lab.WinForms.Controls.Layout.ModernGroupBox();
-            this.gridUsers = new Modern.Lab.WinForms.Controls.Data.ModernDataGrid();
+            this.gridProducts = new Modern.Lab.WinForms.Controls.Data.ModernDataGrid();
             this.editorCard = new Modern.Lab.WinForms.Controls.Layout.ModernGroupBox();
             this.propertyGrid = new Modern.Lab.Hosting.MasterData.ModernPropertyGrid();
             this.actionPanel = new System.Windows.Forms.FlowLayoutPanel();
@@ -67,6 +77,8 @@ namespace Modern.Lab.MasterData
             this.miSave = new System.Windows.Forms.ToolStripMenuItem();
             this.sepDelete = new System.Windows.Forms.ToolStripSeparator();
             this.miDelete = new System.Windows.Forms.ToolStripMenuItem();
+            this.sepDuplicate = new System.Windows.Forms.ToolStripSeparator();
+            this.miDuplicate = new System.Windows.Forms.ToolStripMenuItem();
             this.titlePanel.SuspendLayout();
             this.searchCard.SuspendLayout();
             this.splitMain.Panel1.SuspendLayout();
@@ -90,15 +102,19 @@ namespace Modern.Lab.MasterData
             this.lblTitle.Name = "lblTitle";
             this.lblTitle.Size = new System.Drawing.Size(1376, 28);
             this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "User Master — Session demo - changes reset on restart";
+            this.lblTitle.Text = "Product Master";
             this.lblTitle.TitleBar = true;
             this.spTitle.Dock = System.Windows.Forms.DockStyle.Top;
             this.spTitle.Location = new System.Drawing.Point(12, 40);
             this.spTitle.Name = "spTitle";
             this.spTitle.Size = new System.Drawing.Size(1376, 8);
             this.spTitle.TabIndex = 1;
-            this.searchCard.Controls.Add(this.lblKeyword);
-            this.searchCard.Controls.Add(this.txtKeyword);
+            this.searchCard.Controls.Add(this.lblSubProdTyp);
+            this.searchCard.Controls.Add(this.cboSubProdTyp);
+            this.searchCard.Controls.Add(this.lblLotCd);
+            this.searchCard.Controls.Add(this.cboLotCd);
+            this.searchCard.Controls.Add(this.lblProdId);
+            this.searchCard.Controls.Add(this.txtProdId);
             this.searchCard.Controls.Add(this.btnSearch);
             this.searchCard.Dock = System.Windows.Forms.DockStyle.Top;
             this.searchCard.Location = new System.Drawing.Point(12, 48);
@@ -106,24 +122,48 @@ namespace Modern.Lab.MasterData
             this.searchCard.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
             this.searchCard.Size = new System.Drawing.Size(1376, 56);
             this.searchCard.TabIndex = 2;
-            this.lblKeyword.BackColor = System.Drawing.Color.Transparent;
-            this.lblKeyword.Kind = Modern.Lab.Controls.Wpf.Display.LabelKind.Label;
-            this.lblKeyword.Location = new System.Drawing.Point(12, 12);
-            this.lblKeyword.Name = "lblKeyword";
-            this.lblKeyword.Size = new System.Drawing.Size(72, 32);
-            this.lblKeyword.TabIndex = 0;
-            this.lblKeyword.Text = "Keyword";
-            this.txtKeyword.Location = new System.Drawing.Point(88, 12);
-            this.txtKeyword.Name = "txtKeyword";
-            this.txtKeyword.PlaceholderText = "User Id or keyword";
-            this.txtKeyword.ShowClearButton = true;
-            this.txtKeyword.Size = new System.Drawing.Size(280, 32);
-            this.txtKeyword.TabIndex = 1;
+            this.lblSubProdTyp.BackColor = System.Drawing.Color.Transparent;
+            this.lblSubProdTyp.Kind = Modern.Lab.Controls.Wpf.Display.LabelKind.Label;
+            this.lblSubProdTyp.Location = new System.Drawing.Point(12, 12);
+            this.lblSubProdTyp.Name = "lblSubProdTyp";
+            this.lblSubProdTyp.Size = new System.Drawing.Size(100, 32);
+            this.lblSubProdTyp.TabIndex = 0;
+            this.lblSubProdTyp.Text = "Sub Prod Typ";
+            this.cboSubProdTyp.Location = new System.Drawing.Point(116, 12);
+            this.cboSubProdTyp.Name = "cboSubProdTyp";
+            this.cboSubProdTyp.Size = new System.Drawing.Size(160, 32);
+            this.cboSubProdTyp.TabIndex = 1;
+            this.cboSubProdTyp.Child = null;
+            this.lblLotCd.BackColor = System.Drawing.Color.Transparent;
+            this.lblLotCd.Kind = Modern.Lab.Controls.Wpf.Display.LabelKind.Label;
+            this.lblLotCd.Location = new System.Drawing.Point(292, 12);
+            this.lblLotCd.Name = "lblLotCd";
+            this.lblLotCd.Size = new System.Drawing.Size(60, 32);
+            this.lblLotCd.TabIndex = 2;
+            this.lblLotCd.Text = "Lot Cd";
+            this.cboLotCd.Location = new System.Drawing.Point(356, 12);
+            this.cboLotCd.Name = "cboLotCd";
+            this.cboLotCd.Size = new System.Drawing.Size(260, 32);
+            this.cboLotCd.TabIndex = 3;
+            this.cboLotCd.Child = null;
+            this.lblProdId.BackColor = System.Drawing.Color.Transparent;
+            this.lblProdId.Kind = Modern.Lab.Controls.Wpf.Display.LabelKind.Label;
+            this.lblProdId.Location = new System.Drawing.Point(632, 12);
+            this.lblProdId.Name = "lblProdId";
+            this.lblProdId.Size = new System.Drawing.Size(60, 32);
+            this.lblProdId.TabIndex = 4;
+            this.lblProdId.Text = "Prod Id";
+            this.txtProdId.Location = new System.Drawing.Point(696, 12);
+            this.txtProdId.Name = "txtProdId";
+            this.txtProdId.PlaceholderText = "Prod Id (contains)";
+            this.txtProdId.ShowClearButton = true;
+            this.txtProdId.Size = new System.Drawing.Size(240, 32);
+            this.txtProdId.TabIndex = 5;
             this.btnSearch.Kind = Modern.Lab.Controls.Wpf.Input.ButtonKind.Primary;
-            this.btnSearch.Location = new System.Drawing.Point(376, 12);
+            this.btnSearch.Location = new System.Drawing.Point(952, 12);
             this.btnSearch.Name = "btnSearch";
             this.btnSearch.Size = new System.Drawing.Size(104, 32);
-            this.btnSearch.TabIndex = 2;
+            this.btnSearch.TabIndex = 6;
             this.btnSearch.Text = "Search";
             this.gapSearch.Dock = System.Windows.Forms.DockStyle.Top;
             this.gapSearch.Location = new System.Drawing.Point(12, 104);
@@ -137,33 +177,33 @@ namespace Modern.Lab.MasterData
             this.splitMain.Panel1.Controls.Add(this.listCard);
             this.splitMain.Panel2.Controls.Add(this.editorCard);
             this.splitMain.Size = new System.Drawing.Size(1376, 676);
-            this.splitMain.Panel2MinSize = 470;
             this.splitMain.SplitterDistance = 820;
             this.splitMain.SplitterWidth = 8;
             this.splitMain.TabIndex = 4;
             this.splitMain.TabStop = false;
-            this.listCard.Controls.Add(this.gridUsers);
+            this.listCard.Controls.Add(this.gridProducts);
             this.listCard.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listCard.Location = new System.Drawing.Point(0, 0);
             this.listCard.Name = "listCard";
             this.listCard.Padding = new System.Windows.Forms.Padding(6, 40, 6, 6);
             this.listCard.Size = new System.Drawing.Size(820, 676);
             this.listCard.TabIndex = 0;
-            this.listCard.Text = "User List";
+            this.listCard.Text = "Product List";
             this.listCard.TitleBar = true;
-            this.gridUsers.AutoFitColumns = true;
-            this.gridUsers.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gridUsers.EmptyText = "No users";
-            this.gridUsers.Location = new System.Drawing.Point(8, 40);
-            this.gridUsers.Name = "gridUsers";
-            this.gridUsers.ContextMenuStrip = this.menuActions;
-            this.gridUsers.ReadOnly = true;
-            this.gridUsers.ShowStatusBar = true;
-            this.gridUsers.Size = new System.Drawing.Size(804, 628);
-            this.gridUsers.StatusCountFormat = "{0:N0} users";
-            this.gridUsers.TabIndex = 0;
-            this.gridUsers.SelectionChanged += new System.EventHandler(this.OnUserSelectionChanged);
-            this.gridUsers.Child = null;
+            this.gridProducts.AutoFitColumns = true;
+            this.gridProducts.EnableColumnVirtualization = true;
+            this.gridProducts.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gridProducts.EmptyText = "No products";
+            this.gridProducts.Location = new System.Drawing.Point(8, 40);
+            this.gridProducts.Name = "gridProducts";
+            this.gridProducts.ContextMenuStrip = this.menuActions;
+            this.gridProducts.ReadOnly = true;
+            this.gridProducts.ShowStatusBar = true;
+            this.gridProducts.Size = new System.Drawing.Size(804, 628);
+            this.gridProducts.StatusCountFormat = "{0:N0} products";
+            this.gridProducts.TabIndex = 0;
+            this.gridProducts.SelectionChanged += new System.EventHandler(this.OnProductSelectionChanged);
+            this.gridProducts.Child = null;
             this.editorCard.Controls.Add(this.propertyGrid);
             this.editorCard.Controls.Add(this.actionPanel);
             this.editorCard.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -172,7 +212,7 @@ namespace Modern.Lab.MasterData
             this.editorCard.Padding = new System.Windows.Forms.Padding(12, 44, 12, 8);
             this.editorCard.Size = new System.Drawing.Size(548, 676);
             this.editorCard.TabIndex = 0;
-            this.editorCard.Text = "User";
+            this.editorCard.Text = "Product";
             this.editorCard.TitleBar = true;
             this.propertyGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.propertyGrid.LabelWidth = 150;
@@ -185,7 +225,6 @@ namespace Modern.Lab.MasterData
             this.actionPanel.Controls.Add(this.btnCancel);
             this.actionPanel.Controls.Add(this.btnNew);
             this.actionPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.actionPanel.WrapContents = false;
             this.actionPanel.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
             this.actionPanel.Location = new System.Drawing.Point(14, 616);
             this.actionPanel.Name = "actionPanel";
@@ -225,7 +264,9 @@ namespace Modern.Lab.MasterData
             this.miCancel,
             this.miSave,
             this.sepDelete,
-            this.miDelete});
+            this.miDelete,
+            this.sepDuplicate,
+            this.miDuplicate});
             this.menuActions.Name = "menuActions";
             this.menuActions.Size = new System.Drawing.Size(153, 98);
             this.miNew.Name = "miNew";
@@ -242,6 +283,12 @@ namespace Modern.Lab.MasterData
             this.miDelete.Name = "miDelete";
             this.miDelete.Size = new System.Drawing.Size(152, 22);
             this.miDelete.Text = "Delete";
+            this.sepDuplicate.Name = "sepDuplicate";
+            this.sepDuplicate.Size = new System.Drawing.Size(149, 6);
+            this.miDuplicate.Name = "miDuplicate";
+            this.miDuplicate.Size = new System.Drawing.Size(152, 22);
+            this.miDuplicate.Text = "Duplicate";
+            this.miDuplicate.Click += new System.EventHandler(this.OnDuplicateClick);
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1400, 800);
@@ -251,10 +298,10 @@ namespace Modern.Lab.MasterData
             this.Controls.Add(this.spTitle);
             this.Controls.Add(this.titlePanel);
             this.MinimumSize = new System.Drawing.Size(1000, 600);
-            this.Name = "UserForm";
+            this.Name = "ProductForm";
             this.Padding = new System.Windows.Forms.Padding(12);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "User Master";
+            this.Text = "Product Master";
             this.titlePanel.ResumeLayout(false);
             this.searchCard.ResumeLayout(false);
             this.splitMain.Panel1.ResumeLayout(false);
